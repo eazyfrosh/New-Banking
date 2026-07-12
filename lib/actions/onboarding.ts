@@ -13,7 +13,7 @@ interface InitInput {
 
 export async function initializeCustomerAccount(input: InitInput) {
   if (!isAdminConfigured || !adminDb) {
-    return { ok: false, error: "Firebase admin is not configured on the server." };
+    return { ok: false as const, error: "Firebase admin is not configured on the server." };
   }
 
   const db = adminDb;
@@ -130,5 +130,5 @@ export async function initializeCustomerAccount(input: InitInput) {
 
   await batch.commit();
 
-  return { ok: true };
+  return { ok: true as const };
 }
