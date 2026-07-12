@@ -1,0 +1,247 @@
+export type UserRole = "customer" | "admin";
+
+export type KycStatus = "unverified" | "pending" | "verified" | "rejected";
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  role: UserRole;
+  status: "active" | "suspended" | "closed";
+  photoURL?: string;
+  kycStatus: KycStatus;
+  address?: string;
+  dateOfBirth?: string;
+  currency: string;
+  language: string;
+  notificationPrefs: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+  };
+  transactionPin?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AccountType = "current" | "savings" | "fixed_deposit";
+
+export interface Account {
+  id: string;
+  userId: string;
+  type: AccountType;
+  name: string;
+  accountNumber: string;
+  balance: number;
+  currency: string;
+  interestRate?: number;
+  maturityDate?: string;
+  isPrimary?: boolean;
+  createdAt: string;
+}
+
+export type TransactionType =
+  | "transfer_internal"
+  | "transfer_bank"
+  | "transfer_international"
+  | "bill_payment"
+  | "airtime"
+  | "data"
+  | "deposit"
+  | "withdrawal"
+  | "loan_disbursement"
+  | "loan_repayment"
+  | "investment"
+  | "card_payment"
+  | "interest";
+
+export type TransactionStatus =
+  | "pending"
+  | "completed"
+  | "failed"
+  | "scheduled"
+  | "reversed";
+
+export interface Transaction {
+  id: string;
+  userId: string;
+  accountId: string;
+  type: TransactionType;
+  direction: "credit" | "debit";
+  amount: number;
+  currency: string;
+  status: TransactionStatus;
+  reference: string;
+  description: string;
+  counterparty?: string;
+  counterpartyAccount?: string;
+  category?: string;
+  recurring?: boolean;
+  recurringInterval?: "daily" | "weekly" | "monthly";
+  scheduledFor?: string;
+  fee?: number;
+  createdAt: string;
+}
+
+export type CardType = "virtual" | "physical";
+export type CardNetwork = "visa" | "mastercard" | "verve";
+export type CardStatus = "active" | "frozen" | "blocked" | "expired";
+
+export interface BankCard {
+  id: string;
+  userId: string;
+  accountId: string;
+  type: CardType;
+  network: CardNetwork;
+  cardholderName: string;
+  cardNumber: string;
+  expiryMonth: string;
+  expiryYear: string;
+  cvv: string;
+  pin: string;
+  status: CardStatus;
+  dailyLimit: number;
+  monthlyLimit: number;
+  color: string;
+  createdAt: string;
+}
+
+export type SavingsPlanType = "flexible" | "target" | "fixed_deposit";
+
+export interface SavingsPlan {
+  id: string;
+  userId: string;
+  type: SavingsPlanType;
+  name: string;
+  targetAmount?: number;
+  currentAmount: number;
+  interestRate: number;
+  startDate: string;
+  endDate?: string;
+  frequency?: "daily" | "weekly" | "monthly";
+  autoSaveAmount?: number;
+  status: "active" | "completed" | "broken";
+  createdAt: string;
+}
+
+export type LoanStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "active"
+  | "completed"
+  | "defaulted";
+
+export interface Loan {
+  id: string;
+  userId: string;
+  amount: number;
+  interestRate: number;
+  termMonths: number;
+  purpose: string;
+  status: LoanStatus;
+  monthlyRepayment: number;
+  outstandingBalance: number;
+  disbursedAt?: string;
+  nextRepaymentDate?: string;
+  createdAt: string;
+}
+
+export interface RepaymentScheduleItem {
+  installment: number;
+  dueDate: string;
+  amount: number;
+  principal: number;
+  interest: number;
+  status: "upcoming" | "paid" | "overdue";
+}
+
+export type InvestmentType = "mutual_fund" | "stock" | "crypto";
+
+export interface Investment {
+  id: string;
+  userId: string;
+  type: InvestmentType;
+  symbol: string;
+  name: string;
+  units: number;
+  avgBuyPrice: number;
+  currentPrice: number;
+  currency: string;
+  createdAt: string;
+}
+
+export type BillCategory =
+  | "electricity"
+  | "cable_tv"
+  | "internet"
+  | "water"
+  | "education"
+  | "tax"
+  | "insurance"
+  | "airtime"
+  | "data";
+
+export interface BillProvider {
+  id: string;
+  category: BillCategory;
+  name: string;
+  logo?: string;
+}
+
+export interface BillPayment {
+  id: string;
+  userId: string;
+  category: BillCategory;
+  provider: string;
+  accountReference: string;
+  amount: number;
+  status: TransactionStatus;
+  createdAt: string;
+}
+
+export type NotificationType =
+  | "transaction"
+  | "security"
+  | "loan"
+  | "system"
+  | "promo";
+
+export interface AppNotification {
+  id: string;
+  userId: string | "all";
+  type: NotificationType;
+  title: string;
+  message: string;
+  read: boolean;
+  archived: boolean;
+  createdAt: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  subject: string;
+  message: string;
+  status: "open" | "in_progress" | "resolved" | "closed";
+  priority: "low" | "medium" | "high";
+  createdAt: string;
+}
+
+export interface FraudAlert {
+  id: string;
+  userId: string;
+  transactionId?: string;
+  severity: "low" | "medium" | "high" | "critical";
+  reason: string;
+  status: "open" | "reviewed" | "dismissed";
+  createdAt: string;
+}
+
+export interface ExchangeRate {
+  currency: string;
+  rate: number;
+  change: number;
+}

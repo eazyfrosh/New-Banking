@@ -1,0 +1,91 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Reads happen from the client SDK; all writes that touch money, limits,
+    // roles or other users' data are performed exclusively by server actions
+    // using the Firebase Admin SDK, which bypasses these rules. Client writes
+    // are limited to a user's own non-sensitive profile fields.
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if false; // created by initializeCustomerAccount server action
+      allow update: if isOwner(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['photoURL', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /accounts/{accountId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /cards/{cardId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /savingsPlans/{planId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /loans/{loanId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /investments/{investmentId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /billPayments/{billId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || resource.data.userId == 'all' || isAdmin());
+      allow update: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || resource.data.userId == 'all') &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'archived']);
+      allow create, delete: if isAdmin();
+    }
+
+    match /supportTickets/{ticketId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin();
+      allow create: if isOwner(request.resource.data.userId);
+      allow delete: if isAdmin();
+    }
+
+    match /fraudAlerts/{alertId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /rateLimits/{key} {
+      allow read, write: if false; // server-only via Admin SDK
+    }
+  }
+}
