@@ -125,18 +125,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const retryProfileSetup = React.useCallback(async () => {
     if (!user) return { ok: false, error: "Not signed in." };
 
+    console.log("[retryProfileSetup] server action starts", { uid: user.uid });
+
     const [firstName, ...rest] = (user.displayName || user.email?.split("@")[0] || "Customer").split(" ");
     const lastName = rest.join(" ") || "Account";
 
-    const result = await initializeCustomerAccount({
-      uid: user.uid,
-      email: user.email ?? "",
-      firstName,
-      lastName,
-    });
+    // The server action call itself can throw (network failure invoking it,
+    // a Next.js serialization/digest error, etc) independent of the ok/error
+    // result it returns on a *handled* failure — this must never escape
+    // uncaught, or the caller's loading state never resolves.
+    let result: { ok: boolean; error?: string };
+    try {
+      result = await initializeCustomerAccount({
+        uid: user.uid,
+        email: user.email ?? "",
+        firstName,
+        lastName,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unexpected error while setting up your account.";
+      console.error("[retryProfileSetup] initializeCustomerAccount threw:", err);
+      return { ok: false, error: message };
+    }
+
+    console.log("[retryProfileSetup] server action returned", result);
 
     if (!result.ok) {
-      console.error("[AuthProvider] retryProfileSetup failed:", result.error);
+      console.error("[retryProfileSetup] initializeCustomerAccount failed:", result.error);
       return { ok: false, error: result.error };
     }
 
@@ -147,8 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfileMissing(false);
         setProfileError(null);
       }
+      console.log("[retryProfileSetup] profile re-fetched successfully");
     } catch (err) {
-      console.error("[AuthProvider] re-fetch after retryProfileSetup failed:", err);
+      console.error("[retryProfileSetup] re-fetch after retryProfileSetup failed:", err);
     }
 
     return { ok: true };

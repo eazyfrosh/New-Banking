@@ -52,10 +52,21 @@ export function ProtectedRoute({
 
   async function handleCompleteSetup() {
     setRetrying(true);
-    const result = await retryProfileSetup();
-    setRetrying(false);
-    if (!result.ok) {
-      toast.error(result.error || "Could not complete account setup. Please try again.");
+    try {
+      const result = await retryProfileSetup();
+      if (result.ok) {
+        toast.success("Account setup complete.");
+      } else {
+        toast.error(result.error || "Could not complete account setup. Please try again.");
+      }
+    } catch (err) {
+      // retryProfileSetup already catches its own errors, but this is a
+      // last-resort net so the button can never be left spinning forever
+      // no matter what fails.
+      console.error("[ProtectedRoute] handleCompleteSetup threw:", err);
+      toast.error(err instanceof Error ? err.message : "Unexpected error completing setup.");
+    } finally {
+      setRetrying(false);
     }
   }
 
