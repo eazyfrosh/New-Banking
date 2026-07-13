@@ -107,6 +107,13 @@ export function TransferForm() {
       setPinOpen(false);
       setStep("receipt");
       toast.success("Transfer submitted successfully");
+    } catch (err) {
+      // transferFunds already catches its own errors and returns { ok: false
+      // }, but this is a last-resort net so a network/serialization failure
+      // invoking the action can't leave the user staring at a crash.
+      console.error("[TransferForm] confirmWithPin threw:", err);
+      toast.error(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      pinForm.reset();
     } finally {
       setSubmitting(false);
     }

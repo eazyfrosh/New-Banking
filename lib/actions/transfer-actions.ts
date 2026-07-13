@@ -60,41 +60,45 @@ export async function transferFunds(input: TransferInput) {
   const fee = input.kind === "international" ? Math.max(5, input.amount * 0.01) : 0;
   const total = input.amount + fee;
 
-  const result = await db.runTransaction(async (trx) => {
-    const accSnap = await trx.get(accountRef);
-    const account = accSnap.data();
+  try {
+    const result = await db.runTransaction(async (trx) => {
+      const accSnap = await trx.get(accountRef);
+      const account = accSnap.data();
 
-    if (!account || account.userId !== input.userId) {
-      throw new Error("Account not found.");
-    }
-    if (account.balance < total) {
-      throw new Error("Insufficient balance.");
-    }
+      if (!account || account.userId !== input.userId) {
+        throw new Error("Account not found.");
+      }
+      if (account.balance < total) {
+        throw new Error("Insufficient balance.");
+      }
 
-    trx.update(accountRef, { balance: FieldValue.increment(-total) });
+      trx.update(accountRef, { balance: FieldValue.increment(-total) });
 
-    const status = input.kind === "internal" ? "completed" : "pending";
-    const reference = generateReference();
-    const txRef = db.collection(COLLECTIONS.transactions).doc();
+      const status = input.kind === "internal" ? "completed" : "pending";
+      const reference = generateReference();
+      const txRef = db.collection(COLLECTIONS.transactions).doc();
 
-    trx.set(txRef, {
-      userId: input.userId,
-      accountId: input.fromAccountId,
-      type: `transfer_${input.kind}`,
-      direction: "debit",
-      amount: input.amount,
-      currency: account.currency ?? "USD",
-      status,
-      reference,
-      description: input.note || `Transfer to ${input.recipientName}`,
-      counterparty: input.recipientName,
-      counterpartyAccount: input.recipientAccount,
-      fee,
-      createdAt: new Date().toISOString(),
+      trx.set(txRef, {
+        userId: input.userId,
+        accountId: input.fromAccountId,
+        type: `transfer_${input.kind}`,
+        direction: "debit",
+        amount: input.amount,
+        currency: account.currency ?? "USD",
+        status,
+        reference,
+        description: input.note || `Transfer to ${input.recipientName}`,
+        counterparty: input.recipientName,
+        counterpartyAccount: input.recipientAccount,
+        fee,
+        createdAt: new Date().toISOString(),
+      });
+
+      return { reference, status, fee };
     });
 
-    return { reference, status, fee };
-  });
-
-  return { ok: true as const, ...result };
+    return { ok: true as const, ...result };
+  } catch (err) {
+    return { ok: false as const, error: err instanceof Error ? err.message : "Transfer failed." };
+  }
 }
