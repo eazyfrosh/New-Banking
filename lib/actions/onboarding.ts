@@ -1,6 +1,6 @@
 "use server";
 
-import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { adminConfigError, adminDb, isAdminConfigured } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { generateAccountNumber, generateReference } from "@/lib/utils";
 
@@ -19,8 +19,13 @@ export async function initializeCustomerAccount(input: InitInput) {
   log(input.uid, "initializeCustomerAccount starts", { email: input.email });
 
   if (!isAdminConfigured || !adminDb) {
-    log(input.uid, "aborted: Firebase admin is not configured");
-    return { ok: false as const, error: "Firebase admin is not configured on the server." };
+    log(input.uid, "aborted: Firebase admin is not configured", adminConfigError);
+    return {
+      ok: false as const,
+      error: adminConfigError
+        ? `Firebase admin is not configured on the server: ${adminConfigError}`
+        : "Firebase admin is not configured on the server.",
+    };
   }
 
   const db = adminDb;

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -70,7 +70,7 @@ export function TransferForm() {
     defaultValues: { pin: "" },
   });
 
-  const kind = form.watch("kind");
+  const kind = useWatch({ control: form.control, name: "kind" });
   const values = form.getValues();
   const selectedAccount = accounts.find((a) => a.id === values.fromAccountId);
 
