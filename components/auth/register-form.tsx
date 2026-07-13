@@ -34,6 +34,8 @@ function firebaseAuthErrorMessage(code: string) {
       return "An account with this email already exists.";
     case "auth/weak-password":
       return "Please choose a stronger password.";
+    case "auth/network-request-failed":
+      return "Network error. Check your internet connection and try again.";
     default:
       return "Something went wrong. Please try again.";
   }
@@ -69,18 +71,28 @@ export function RegisterForm() {
         displayName: `${values.firstName} ${values.lastName}`,
       });
 
-      await initializeCustomerAccount({
+      const setup = await initializeCustomerAccount({
         uid: credential.user.uid,
         email: values.email,
         firstName: values.firstName,
         lastName: values.lastName,
       });
 
+      if (!setup.ok) {
+        console.error("initializeCustomerAccount failed:", setup.error);
+        await credential.user.delete().catch((cleanupError) => {
+          console.error("Failed to roll back auth user after setup failure:", cleanupError);
+        });
+        toast.error(setup.error || "Could not finish setting up your account. Please try again.");
+        return;
+      }
+
       await sendEmailVerification(credential.user);
 
       toast.success("Account created! Please verify your email.");
       router.push("/verify-email");
     } catch (error) {
+      console.error("Registration failed:", error);
       const code = error instanceof Error && "code" in error ? String((error as { code: string }).code) : "";
       toast.error(firebaseAuthErrorMessage(code));
     } finally {
@@ -148,23 +160,23 @@ export function RegisterForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <div className="relative">
+                <div className="relative">
+                  <FormControl>
                     <Input
                       type={showPassword ? "text" : "password"}
                       autoComplete="new-password"
                       {...field}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="text-muted-foreground absolute inset-y-0 right-0 flex w-9 items-center justify-center"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                  </div>
-                </FormControl>
+                  </FormControl>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="text-muted-foreground absolute inset-y-0 right-0 flex w-9 items-center justify-center"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}

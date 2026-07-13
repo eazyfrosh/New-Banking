@@ -39,20 +39,3 @@ export async function updateProfileDetails(
 
   return { ok: true as const };
 }
-
-export async function submitKyc(input: {
-  userId: string;
-  idDocumentUrl: string;
-  utilityBillUrl: string;
-}) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
-
-  await adminDb.collection(COLLECTIONS.users).doc(input.userId).update({
-    kycStatus: "pending",
-    kycIdDocumentUrl: input.idDocumentUrl,
-    kycUtilityBillUrl: input.utilityBillUrl,
-    updatedAt: new Date().toISOString(),
-  });
-
-  return { ok: true as const };
-}

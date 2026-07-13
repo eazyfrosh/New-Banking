@@ -1,9 +1,9 @@
 "use client";
 
 import { useRealtimeCollection } from "@/hooks/use-realtime-collection";
-import { subscribeAccounts } from "@/lib/services/accounts";
+import { listAccounts, subscribeAccounts } from "@/lib/services/accounts";
 import type { Account } from "@/types";
 
 export function useAccounts(userId: string | undefined) {
-  return useRealtimeCollection<Account>(userId, subscribeAccounts);
+  return useRealtimeCollection<Account>(userId, subscribeAccounts, listAccounts);
 }

@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 
 import { ProfileDetailsForm } from "@/components/dashboard/profile/profile-details-form";
-import { KycPanel } from "@/components/dashboard/profile/kyc-panel";
 import { SecuritySettings } from "@/components/dashboard/profile/security-settings";
 import { PreferencesPanel } from "@/components/dashboard/profile/preferences-panel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,15 +22,11 @@ function ProfileTabs() {
     <Tabs defaultValue={defaultTab}>
       <TabsList>
         <TabsTrigger value="profile">Profile</TabsTrigger>
-        <TabsTrigger value="kyc">KYC</TabsTrigger>
         <TabsTrigger value="security">Security</TabsTrigger>
         <TabsTrigger value="preferences">Preferences</TabsTrigger>
       </TabsList>
       <TabsContent value="profile" className="mt-6">
         <ProfileDetailsForm profile={profile} />
-      </TabsContent>
-      <TabsContent value="kyc" className="mt-6">
-        <KycPanel profile={profile} />
       </TabsContent>
       <TabsContent value="security" className="mt-6">
         <SecuritySettings userId={profile.uid} />
@@ -49,7 +44,7 @@ export default function ProfilePage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Profile & settings</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Manage your personal details, verification, security and preferences.
+          Manage your personal details, security and preferences.
         </p>
       </div>
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>

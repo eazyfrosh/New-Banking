@@ -36,6 +36,8 @@ function firebaseAuthErrorMessage(code: string) {
       return "Too many attempts. Please wait a moment and try again.";
     case "auth/user-disabled":
       return "This account has been suspended. Contact support.";
+    case "auth/network-request-failed":
+      return "Network error. Check your internet connection and try again.";
     default:
       return "Something went wrong. Please try again.";
   }
@@ -67,6 +69,7 @@ export function LoginForm() {
       router.push(role === "admin" ? "/admin" : "/dashboard");
       router.refresh();
     } catch (error) {
+      console.error("Login failed:", error);
       const code = error instanceof Error && "code" in error ? String((error as { code: string }).code) : "";
       toast.error(firebaseAuthErrorMessage(code));
     } finally {
@@ -113,23 +116,23 @@ export function LoginForm() {
                     Forgot password?
                   </Link>
                 </div>
-                <FormControl>
-                  <div className="relative">
+                <div className="relative">
+                  <FormControl>
                     <Input
                       type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
                       {...field}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="text-muted-foreground absolute inset-y-0 right-0 flex w-9 items-center justify-center"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                  </div>
-                </FormControl>
+                  </FormControl>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="text-muted-foreground absolute inset-y-0 right-0 flex w-9 items-center justify-center"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
