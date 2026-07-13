@@ -35,18 +35,23 @@ export function CreateUserDialog() {
       return;
     }
     setSubmitting(true);
-    const result = await adminCreateUser({ firstName, lastName, email, password });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success("Customer account created");
-      setOpen(false);
-      setFirstName("");
-      setLastName("");
-      setEmail("");
-      setPassword("");
-      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await adminCreateUser({ firstName, lastName, email, password });
+      if (result.ok) {
+        toast.success("Customer account created");
+        setOpen(false);
+        setFirstName("");
+        setLastName("");
+        setEmail("");
+        setPassword("");
+        queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

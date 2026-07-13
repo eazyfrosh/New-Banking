@@ -31,14 +31,19 @@ export default function AdminBroadcastPage() {
       return;
     }
     setSubmitting(true);
-    const result = await adminBroadcastNotification({ title, message, type });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success("Broadcast sent to all users");
-      setTitle("");
-      setMessage("");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await adminBroadcastNotification({ title, message, type });
+      if (result.ok) {
+        toast.success("Broadcast sent to all users");
+        setTitle("");
+        setMessage("");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

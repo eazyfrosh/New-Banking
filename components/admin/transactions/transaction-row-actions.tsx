@@ -26,25 +26,35 @@ export function TransactionRowActions({ transaction }: { transaction: Transactio
 
   async function reverse() {
     setBusy(true);
-    const result = await adminReverseTransaction(transaction.id);
-    setBusy(false);
-    if (result.ok) {
-      toast.success("Transaction reversed");
-      invalidate();
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await adminReverseTransaction(transaction.id);
+      if (result.ok) {
+        toast.success("Transaction reversed");
+        invalidate();
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
   async function review(approve: boolean) {
     setBusy(true);
-    const result = await adminReviewTransfer(transaction.id, approve);
-    setBusy(false);
-    if (result.ok) {
-      toast.success(approve ? "Transfer approved" : "Transfer rejected");
-      invalidate();
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await adminReviewTransfer(transaction.id, approve);
+      if (result.ok) {
+        toast.success(approve ? "Transfer approved" : "Transfer rejected");
+        invalidate();
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
   }
 

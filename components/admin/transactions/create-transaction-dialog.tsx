@@ -52,20 +52,25 @@ export function CreateTransactionDialog() {
       return;
     }
     setSubmitting(true);
-    const result = await adminCreateTransaction({
-      userId,
-      accountId,
-      amount: Number(amount),
-      direction,
-      description,
-    });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success("Transaction created");
-      setOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["admin", "transactions"] });
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await adminCreateTransaction({
+        userId,
+        accountId,
+        amount: Number(amount),
+        direction,
+        description,
+      });
+      if (result.ok) {
+        toast.success("Transaction created");
+        setOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["admin", "transactions"] });
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

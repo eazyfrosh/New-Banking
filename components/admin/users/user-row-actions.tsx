@@ -67,41 +67,56 @@ export function UserRowActions({ user }: { user: UserProfile }) {
 
   async function toggleStatus() {
     setBusy(true);
-    const next = user.status === "active" ? "suspended" : "active";
-    const result = await adminSetUserStatus(user.uid, next);
-    setBusy(false);
-    if (result.ok) {
-      toast.success(next === "suspended" ? "User suspended" : "User reactivated");
-      invalidate();
-    } else {
-      toast.error(result.error);
+    try {
+      const next = user.status === "active" ? "suspended" : "active";
+      const result = await adminSetUserStatus(user.uid, next);
+      if (result.ok) {
+        toast.success(next === "suspended" ? "User suspended" : "User reactivated");
+        invalidate();
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
   async function handleAdjustBalance() {
     if (!accountId || !amount) return;
     setBusy(true);
-    const result = await adminAdjustBalance({ accountId, amount: Number(amount), reason: reason || "Manual adjustment" });
-    setBusy(false);
-    if (result.ok) {
-      toast.success("Balance adjusted");
-      setBalanceOpen(false);
-      setAmount("");
-      setReason("");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await adminAdjustBalance({ accountId, amount: Number(amount), reason: reason || "Manual adjustment" });
+      if (result.ok) {
+        toast.success("Balance adjusted");
+        setBalanceOpen(false);
+        setAmount("");
+        setReason("");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
   async function handleDelete() {
     setBusy(true);
-    const result = await adminDeleteUser(user.uid);
-    setBusy(false);
-    if (result.ok) {
-      toast.success("User deleted");
-      invalidate();
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await adminDeleteUser(user.uid);
+      if (result.ok) {
+        toast.success("User deleted");
+        invalidate();
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
   }
 
