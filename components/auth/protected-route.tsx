@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
 import { useAuth } from "@/components/providers/auth-provider";
 import type { UserRole } from "@/types";
@@ -17,8 +18,9 @@ export function ProtectedRoute({
   requiredRole?: UserRole;
 }) {
   const router = useRouter();
-  const { user, profile, loading, profileError, signOut } = useAuth();
+  const { user, profile, loading, profileMissing, profileError, retryProfileSetup, signOut } = useAuth();
   const [stuck, setStuck] = React.useState(false);
+  const [retrying, setRetrying] = React.useState(false);
 
   React.useEffect(() => {
     if (loading) return;
@@ -48,9 +50,45 @@ export function ProtectedRoute({
     return () => clearTimeout(timer);
   }, [user, profile]);
 
-  const cannotLoadProfile = !loading && user && !profile && (profileError || stuck);
+  async function handleCompleteSetup() {
+    setRetrying(true);
+    const result = await retryProfileSetup();
+    setRetrying(false);
+    if (!result.ok) {
+      toast.error(result.error || "Could not complete account setup. Please try again.");
+    }
+  }
 
-  if (cannotLoadProfile) {
+  // Confirmed via a successful read: no profile document exists for this account
+  // (most commonly because a prior registration attempt didn't finish setting it up).
+  if (!loading && user && user.emailVerified && profileMissing) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-8 text-center">
+        <span className="bg-warning/15 text-warning flex size-12 items-center justify-center rounded-2xl">
+          <UserPlus className="size-5" />
+        </span>
+        <div>
+          <p className="font-medium">Your account setup didn&apos;t finish</p>
+          <p className="text-muted-foreground mt-1 max-w-sm text-sm">
+            You&apos;re signed in, but we couldn&apos;t find your account profile. This can
+            happen if registration was interrupted. Click below to finish setting it up.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => signOut().then(() => router.replace("/login"))}>
+            Sign out
+          </Button>
+          <Button variant="gradient" onClick={handleCompleteSetup} disabled={retrying}>
+            {retrying && <Loader2 className="size-4 animate-spin" />}
+            Complete setup
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // A read actually failed (network/permission/unavailable/etc) — show the real error.
+  if (!loading && user && user.emailVerified && profileError) {
     return (
       <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-8 text-center">
         <span className="bg-destructive/10 text-destructive flex size-12 items-center justify-center rounded-2xl">
@@ -59,9 +97,9 @@ export function ProtectedRoute({
         <div>
           <p className="font-medium">We couldn&apos;t load your account</p>
           <p className="text-muted-foreground mt-1 max-w-sm text-sm">
-            A browser extension (ad blocker or privacy tool) may be blocking a secure connection
-            to our database. Try disabling it for this site, or check your connection, then
-            retry.
+            {"code" in profileError && profileError.code
+              ? `Firestore error: ${profileError.code}`
+              : profileError.message || "An unexpected error occurred while loading your data."}
           </p>
         </div>
         <div className="flex gap-2">
@@ -72,6 +110,29 @@ export function ProtectedRoute({
             Retry
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  // Neither confirmed missing nor a hard error — but nothing has resolved in a
+  // reasonable time. Last-resort fallback so the user isn't staring at a blank
+  // skeleton forever with zero information.
+  if (!loading && user && user.emailVerified && !profile && stuck) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-8 text-center">
+        <span className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-2xl">
+          <AlertTriangle className="size-5" />
+        </span>
+        <div>
+          <p className="font-medium">This is taking longer than expected</p>
+          <p className="text-muted-foreground mt-1 max-w-sm text-sm">
+            We&apos;re still trying to load your account data. This can be caused by a slow or
+            restricted network connection.
+          </p>
+        </div>
+        <Button variant="gradient" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
       </div>
     );
   }
