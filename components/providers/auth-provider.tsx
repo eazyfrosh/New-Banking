@@ -10,7 +10,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, onSnapshot, type FirestoreError } from "firebase/firestore";
 
-import { auth, db } from "@/lib/firebase/client";
+import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase/client";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { initializeCustomerAccount } from "@/lib/actions/onboarding";
 import type { UserProfile } from "@/types";
@@ -46,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profileError, setProfileError] = React.useState<FirestoreError | Error | null>(null);
 
   React.useEffect(() => {
+    const auth = getFirebaseAuth();
     setPersistence(auth, browserLocalPersistence).catch(() => {});
 
     const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
@@ -62,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     if (!user) return;
 
+    const db = getFirebaseDb();
     let cancelled = false;
     let resolvedOnce = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- entering a new loading phase for the newly signed-in user before the fetch/subscription below resolves
@@ -156,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const snap = await getDoc(doc(db, COLLECTIONS.users, user.uid));
+      const snap = await getDoc(doc(getFirebaseDb(), COLLECTIONS.users, user.uid));
       if (snap.exists()) {
         setProfile({ ...(snap.data() as UserProfile), uid: snap.id });
         setProfileMissing(false);
@@ -171,7 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const signOut = React.useCallback(async () => {
-    await firebaseSignOut(auth);
+    await firebaseSignOut(getFirebaseAuth());
   }, []);
 
   const value = React.useMemo(

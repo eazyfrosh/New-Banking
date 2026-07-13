@@ -2,7 +2,7 @@
 
 import { FieldValue } from "firebase-admin/firestore";
 
-import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { generateReference } from "@/lib/utils";
 import type { InvestmentType } from "@/types";
@@ -16,8 +16,9 @@ export async function buyInvestment(input: {
   units: number;
   price: number;
 }) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
-  const db = adminDb;
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
+  const db = getAdminDb();
 
   const cost = input.units * input.price;
   const accountRef = db.collection(COLLECTIONS.accounts).doc(input.accountId);
@@ -70,8 +71,9 @@ export async function sellInvestment(input: {
   investmentId: string;
   units: number;
 }) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
-  const db = adminDb;
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
+  const db = getAdminDb();
 
   const invRef = db.collection(COLLECTIONS.investments).doc(input.investmentId);
   const accountRef = db.collection(COLLECTIONS.accounts).doc(input.accountId);

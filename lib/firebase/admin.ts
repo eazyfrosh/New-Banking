@@ -1,50 +1,74 @@
 import "server-only";
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { getAuth, type Auth } from "firebase-admin/auth";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
-// This module's top-level initialization runs on import, before any calling
-// function's own try/catch exists as a stack frame - a credential error here
-// (e.g. a malformed FIREBASE_PRIVATE_KEY) would otherwise throw uncaught
-// during the server's render/action pass, surfacing only as Next's generic
-// "An error occurred in the Server Components render" with no indication of
-// the real cause. Every failure mode here must be caught and turned into
-// isAdminConfigured=false + a captured reason instead.
-function buildAdminApp(): { app: App | null; error: string | null } {
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+import { readFirebaseAdminEnv } from "@/lib/firebase/env";
 
-  if (!projectId || !clientEmail || !privateKey) {
-    const missing = [
-      !projectId && "FIREBASE_PROJECT_ID",
-      !clientEmail && "FIREBASE_CLIENT_EMAIL",
-      !privateKey && "FIREBASE_PRIVATE_KEY",
-    ]
-      .filter(Boolean)
-      .join(", ");
-    return { app: null, error: `Missing environment variable(s): ${missing}` };
+interface FirebaseAdmin {
+  app: App;
+  auth: Auth;
+  db: Firestore;
+}
+
+let admin: FirebaseAdmin | null = null;
+let cachedError: string | null = null;
+
+/**
+ * Lazily creates the Firebase Admin SDK singleton on first call. Nothing
+ * here runs at module scope: importing this file cannot throw during
+ * prerendering. A missing or malformed service-account credential (the
+ * single biggest cause of "works locally, breaks on Vercel") only surfaces
+ * when a server action actually tries to use it, as a normal thrown error
+ * with the real underlying reason - never as an unhandled crash during a
+ * build or an SSR render pass.
+ */
+function getAdmin(): FirebaseAdmin {
+  if (admin) return admin;
+  if (cachedError) throw new Error(cachedError);
+
+  const result = readFirebaseAdminEnv();
+  if (!result.ok) {
+    cachedError = result.error;
+    throw new Error(result.error);
   }
 
   try {
-    const existing = getApps()[0];
-    if (existing) return { app: existing, error: null };
-
-    const app = initializeApp({
-      credential: cert({ projectId, clientEmail, privateKey }),
-    });
-    return { app, error: null };
+    const app = getApps()[0] ?? initializeApp({ credential: cert(result.env) });
+    admin = { app, auth: getAuth(app), db: getFirestore(app) };
+    return admin;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    cachedError = message;
     console.error("[firebase/admin] Failed to initialize Admin SDK:", err);
-    return { app: null, error: message };
+    throw new Error(message);
   }
 }
 
-const { app: adminApp, error: adminInitError } = buildAdminApp();
+export function getAdminAuth(): Auth {
+  return getAdmin().auth;
+}
 
-export const adminAuth = adminApp ? getAuth(adminApp) : null;
-export const adminDb = adminApp ? getFirestore(adminApp) : null;
-export const isAdminConfigured = Boolean(adminApp);
-/** Set when Admin SDK initialization failed, with the real underlying reason. */
-export const adminConfigError = adminInitError;
+export function getAdminDb(): Firestore {
+  return getAdmin().db;
+}
+
+/** True if every required Admin SDK env var is present. Safe to call anywhere, never throws. */
+export function isFirebaseAdminConfigured(): boolean {
+  return readFirebaseAdminEnv().ok;
+}
+
+/**
+ * Returns the reason the Admin SDK is unavailable (missing env var, bad
+ * credential, etc), or null if it's healthy. Never throws - use this in
+ * server actions to fail gracefully with a real, specific message instead
+ * of letting getAdminDb()/getAdminAuth() throw uncaught.
+ */
+export function getAdminInitError(): string | null {
+  try {
+    getAdmin();
+    return null;
+  } catch (err) {
+    return err instanceof Error ? err.message : String(err);
+  }
+}

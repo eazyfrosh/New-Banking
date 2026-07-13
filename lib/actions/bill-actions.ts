@@ -2,7 +2,7 @@
 
 import { FieldValue } from "firebase-admin/firestore";
 
-import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { generateReference } from "@/lib/utils";
 import type { BillCategory } from "@/types";
@@ -17,14 +17,15 @@ interface PayBillInput {
 }
 
 export async function payBill(input: PayBillInput) {
-  if (!isAdminConfigured || !adminDb) {
-    return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) {
+    return { ok: false as const, error: `Server is not configured: ${adminError}` };
   }
   if (input.amount <= 0) {
     return { ok: false as const, error: "Enter a valid amount." };
   }
 
-  const db = adminDb;
+  const db = getAdminDb();
   const accountRef = db.collection(COLLECTIONS.accounts).doc(input.accountId);
 
   try {

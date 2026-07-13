@@ -1,15 +1,24 @@
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 
 export async function checkAndRecordAttempt(key: string) {
-  if (!adminDb) return { allowed: true, remaining: MAX_ATTEMPTS };
+  // Rate limiting fails open: if the Admin SDK is unavailable, allow the
+  // attempt rather than blocking every user out because a side concern is
+  // broken. The action being rate-limited still has its own real
+  // Admin SDK guard and will fail there if it's genuinely unconfigured.
+  let db;
+  try {
+    db = getAdminDb();
+  } catch {
+    return { allowed: true, remaining: MAX_ATTEMPTS };
+  }
 
-  const ref = adminDb.collection("rateLimits").doc(key);
+  const ref = db.collection("rateLimits").doc(key);
   const snap = await ref.get();
   const now = Date.now();
   const data = snap.data() as
@@ -30,6 +39,9 @@ export async function checkAndRecordAttempt(key: string) {
 }
 
 export async function resetAttempts(key: string) {
-  if (!adminDb) return;
-  await adminDb.collection("rateLimits").doc(key).delete();
+  try {
+    await getAdminDb().collection("rateLimits").doc(key).delete();
+  } catch {
+    // Same fail-open reasoning as checkAndRecordAttempt.
+  }
 }

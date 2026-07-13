@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 
-import { auth } from "@/lib/firebase/client";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 import { forgotPasswordSchema, type ForgotPasswordValues } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ export function ForgotPasswordForm() {
   async function onSubmit(values: ForgotPasswordValues) {
     setSubmitting(true);
     try {
-      await sendPasswordResetEmail(auth, values.email);
+      await sendPasswordResetEmail(getFirebaseAuth(), values.email);
       setSent(true);
     } catch {
       // Avoid leaking whether an email exists.

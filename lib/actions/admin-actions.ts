@@ -2,14 +2,15 @@
 
 import { FieldValue } from "firebase-admin/firestore";
 
-import { adminAuth, adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminAuth, getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { initializeCustomerAccount } from "@/lib/actions/onboarding";
 import { generateReference } from "@/lib/utils";
 
 function guard() {
-  if (!isAdminConfigured || !adminDb || !adminAuth) {
-    return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) {
+    return { ok: false as const, error: `Server is not configured: ${adminError}` };
   }
   return null;
 }
@@ -23,7 +24,7 @@ export async function adminCreateUser(input: {
   const err = guard();
   if (err) return err;
 
-  const userRecord = await adminAuth!.createUser({
+  const userRecord = await getAdminAuth().createUser({
     email: input.email,
     password: input.password,
     displayName: `${input.firstName} ${input.lastName}`,
@@ -44,11 +45,11 @@ export async function adminSetUserStatus(userId: string, status: "active" | "sus
   const err = guard();
   if (err) return err;
 
-  await adminDb!.collection(COLLECTIONS.users).doc(userId).update({
+  await getAdminDb().collection(COLLECTIONS.users).doc(userId).update({
     status,
     updatedAt: new Date().toISOString(),
   });
-  await adminAuth!.updateUser(userId, { disabled: status !== "active" });
+  await getAdminAuth().updateUser(userId, { disabled: status !== "active" });
 
   return { ok: true as const };
 }
@@ -57,8 +58,8 @@ export async function adminDeleteUser(userId: string) {
   const err = guard();
   if (err) return err;
 
-  await adminAuth!.deleteUser(userId).catch(() => null);
-  await adminDb!.collection(COLLECTIONS.users).doc(userId).delete();
+  await getAdminAuth().deleteUser(userId).catch(() => null);
+  await getAdminDb().collection(COLLECTIONS.users).doc(userId).delete();
 
   return { ok: true as const };
 }
@@ -71,14 +72,14 @@ export async function adminAdjustBalance(input: {
   const err = guard();
   if (err) return err;
 
-  const accountRef = adminDb!.collection(COLLECTIONS.accounts).doc(input.accountId);
+  const accountRef = getAdminDb().collection(COLLECTIONS.accounts).doc(input.accountId);
   const snap = await accountRef.get();
   const account = snap.data();
   if (!account) return { ok: false as const, error: "Account not found." };
 
   await accountRef.update({ balance: FieldValue.increment(input.amount) });
 
-  await adminDb!.collection(COLLECTIONS.transactions).add({
+  await getAdminDb().collection(COLLECTIONS.transactions).add({
     userId: account.userId,
     accountId: input.accountId,
     type: input.amount >= 0 ? "deposit" : "withdrawal",
@@ -104,12 +105,12 @@ export async function adminCreateTransaction(input: {
   const err = guard();
   if (err) return err;
 
-  const accountRef = adminDb!.collection(COLLECTIONS.accounts).doc(input.accountId);
+  const accountRef = getAdminDb().collection(COLLECTIONS.accounts).doc(input.accountId);
   const delta = input.direction === "credit" ? input.amount : -input.amount;
 
   await accountRef.update({ balance: FieldValue.increment(delta) });
 
-  const ref = adminDb!.collection(COLLECTIONS.transactions).doc();
+  const ref = getAdminDb().collection(COLLECTIONS.transactions).doc();
   await ref.set({
     userId: input.userId,
     accountId: input.accountId,
@@ -130,13 +131,13 @@ export async function adminReverseTransaction(transactionId: string) {
   const err = guard();
   if (err) return err;
 
-  const txRef = adminDb!.collection(COLLECTIONS.transactions).doc(transactionId);
+  const txRef = getAdminDb().collection(COLLECTIONS.transactions).doc(transactionId);
   const snap = await txRef.get();
   const tx = snap.data();
   if (!tx) return { ok: false as const, error: "Transaction not found." };
   if (tx.status === "reversed") return { ok: false as const, error: "Already reversed." };
 
-  const accountRef = adminDb!.collection(COLLECTIONS.accounts).doc(tx.accountId);
+  const accountRef = getAdminDb().collection(COLLECTIONS.accounts).doc(tx.accountId);
   const delta = tx.direction === "credit" ? -tx.amount : tx.amount;
 
   await accountRef.update({ balance: FieldValue.increment(delta) });
@@ -149,7 +150,7 @@ export async function adminReviewTransfer(transactionId: string, approve: boolea
   const err = guard();
   if (err) return err;
 
-  const txRef = adminDb!.collection(COLLECTIONS.transactions).doc(transactionId);
+  const txRef = getAdminDb().collection(COLLECTIONS.transactions).doc(transactionId);
   const snap = await txRef.get();
   const tx = snap.data();
   if (!tx) return { ok: false as const, error: "Transaction not found." };
@@ -157,7 +158,7 @@ export async function adminReviewTransfer(transactionId: string, approve: boolea
   if (approve) {
     await txRef.update({ status: "completed" });
   } else {
-    const accountRef = adminDb!.collection(COLLECTIONS.accounts).doc(tx.accountId);
+    const accountRef = getAdminDb().collection(COLLECTIONS.accounts).doc(tx.accountId);
     await accountRef.update({ balance: FieldValue.increment(tx.amount + (tx.fee ?? 0)) });
     await txRef.update({ status: "failed" });
   }
@@ -173,7 +174,7 @@ export async function adminBroadcastNotification(input: {
   const err = guard();
   if (err) return err;
 
-  await adminDb!.collection(COLLECTIONS.notifications).add({
+  await getAdminDb().collection(COLLECTIONS.notifications).add({
     userId: "all",
     type: input.type,
     title: input.title,

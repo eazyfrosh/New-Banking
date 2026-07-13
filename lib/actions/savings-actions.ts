@@ -2,7 +2,7 @@
 
 import { FieldValue } from "firebase-admin/firestore";
 
-import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { generateReference } from "@/lib/utils";
 import type { SavingsPlanType } from "@/types";
@@ -21,8 +21,9 @@ interface CreatePlanInput {
 }
 
 export async function createSavingsPlan(input: CreatePlanInput) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
-  const db = adminDb;
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
+  const db = getAdminDb();
 
   const accountRef = db.collection(COLLECTIONS.accounts).doc(input.fundingAccountId);
 
@@ -84,8 +85,9 @@ export async function fundSavingsPlan(input: {
   fundingAccountId: string;
   amount: number;
 }) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
-  const db = adminDb;
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
+  const db = getAdminDb();
 
   const accountRef = db.collection(COLLECTIONS.accounts).doc(input.fundingAccountId);
   const planRef = db.collection(COLLECTIONS.savingsPlans).doc(input.planId);

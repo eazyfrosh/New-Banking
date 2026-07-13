@@ -13,7 +13,7 @@ import {
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { auth } from "@/lib/firebase/client";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 import { initializeCustomerAccount } from "@/lib/actions/onboarding";
 import { registerSchema, type RegisterValues } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
@@ -62,7 +62,7 @@ export function RegisterForm() {
     setSubmitting(true);
     try {
       const credential = await createUserWithEmailAndPassword(
-        auth,
+        getFirebaseAuth(),
         values.email,
         values.password
       );

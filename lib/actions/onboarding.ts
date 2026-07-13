@@ -1,6 +1,6 @@
 "use server";
 
-import { adminConfigError, adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { generateAccountNumber, generateReference } from "@/lib/utils";
 
@@ -15,20 +15,25 @@ function log(uid: string, step: string, extra?: unknown) {
   console.log(`[initializeCustomerAccount][${uid}] ${step}`, extra ?? "");
 }
 
+/**
+ * Creates a new customer's full starting state: profile, three accounts, a
+ * virtual card, seed transactions, and a welcome notification. Writes all
+ * 10 documents in a single atomic Firestore batch - either everything
+ * exists or nothing does, so a failure here can never leave a half-set-up
+ * account. Deterministic (uid-derived) document IDs make this idempotent:
+ * calling it again for the same uid overwrites the same 10 documents
+ * instead of creating duplicates, so it's safe to retry after a failure.
+ */
 export async function initializeCustomerAccount(input: InitInput) {
-  log(input.uid, "initializeCustomerAccount starts", { email: input.email });
+  log(input.uid, "starts", { email: input.email });
 
-  if (!isAdminConfigured || !adminDb) {
-    log(input.uid, "aborted: Firebase admin is not configured", adminConfigError);
-    return {
-      ok: false as const,
-      error: adminConfigError
-        ? `Firebase admin is not configured on the server: ${adminConfigError}`
-        : "Firebase admin is not configured on the server.",
-    };
+  const adminError = getAdminInitError();
+  if (adminError) {
+    log(input.uid, "aborted: admin not configured", adminError);
+    return { ok: false as const, error: `Account setup is unavailable: ${adminError}` };
   }
 
-  const db = adminDb;
+  const db = getAdminDb();
   const now = new Date().toISOString();
 
   const currentAccountId = `acc_${input.uid}_current`;
@@ -36,11 +41,10 @@ export async function initializeCustomerAccount(input: InitInput) {
   const fixedAccountId = `acc_${input.uid}_fixed`;
 
   try {
-    // Deterministic doc IDs throughout (rather than one atomic batch) so this
-    // function is idempotent: if it fails partway and is retried, each step
-    // overwrites the same doc instead of creating duplicates, and we get a
-    // log line per phase to see exactly where a failure happens.
-    await db.collection(COLLECTIONS.users).doc(input.uid).set(
+    const batch = db.batch();
+
+    batch.set(
+      db.collection(COLLECTIONS.users).doc(input.uid),
       {
         uid: input.uid,
         email: input.email,
@@ -57,10 +61,8 @@ export async function initializeCustomerAccount(input: InitInput) {
       },
       { merge: true }
     );
-    log(input.uid, "profile write completes");
 
-    const accountsBatch = db.batch();
-    accountsBatch.set(db.collection(COLLECTIONS.accounts).doc(currentAccountId), {
+    batch.set(db.collection(COLLECTIONS.accounts).doc(currentAccountId), {
       userId: input.uid,
       type: "current",
       name: "Current Account",
@@ -70,7 +72,7 @@ export async function initializeCustomerAccount(input: InitInput) {
       isPrimary: true,
       createdAt: now,
     });
-    accountsBatch.set(db.collection(COLLECTIONS.accounts).doc(savingsAccountId), {
+    batch.set(db.collection(COLLECTIONS.accounts).doc(savingsAccountId), {
       userId: input.uid,
       type: "savings",
       name: "Savings Account",
@@ -80,7 +82,7 @@ export async function initializeCustomerAccount(input: InitInput) {
       interestRate: 4.5,
       createdAt: now,
     });
-    accountsBatch.set(db.collection(COLLECTIONS.accounts).doc(fixedAccountId), {
+    batch.set(db.collection(COLLECTIONS.accounts).doc(fixedAccountId), {
       userId: input.uid,
       type: "fixed_deposit",
       name: "Fixed Deposit",
@@ -91,7 +93,8 @@ export async function initializeCustomerAccount(input: InitInput) {
       maturityDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 180).toISOString(),
       createdAt: now,
     });
-    accountsBatch.set(db.collection(COLLECTIONS.cards).doc(`card_${input.uid}_primary`), {
+
+    batch.set(db.collection(COLLECTIONS.cards).doc(`card_${input.uid}_primary`), {
       userId: input.uid,
       accountId: currentAccountId,
       type: "virtual",
@@ -108,21 +111,17 @@ export async function initializeCustomerAccount(input: InitInput) {
       color: "from-indigo-600 to-violet-600",
       createdAt: now,
     });
-    await accountsBatch.commit();
-    log(input.uid, "accounts batch completes");
 
-    const seedTx = [
+    const seedTransactions = [
       { desc: "Welcome bonus", amount: 50, type: "deposit", direction: "credit" as const },
       { desc: "Grocery Mart", amount: 84.32, type: "card_payment", direction: "debit" as const },
       { desc: "Salary deposit", amount: 3200, type: "deposit", direction: "credit" as const },
       { desc: "Electric Co. bill", amount: 120.5, type: "bill_payment", direction: "debit" as const },
     ];
-
-    const txBatch = db.batch();
-    seedTx.forEach((tx, i) => {
+    seedTransactions.forEach((tx, i) => {
       const ref = db.collection(COLLECTIONS.transactions).doc(`tx_${input.uid}_seed_${i}`);
-      const createdAt = new Date(Date.now() - (seedTx.length - i) * 86400000).toISOString();
-      txBatch.set(ref, {
+      const createdAt = new Date(Date.now() - (seedTransactions.length - i) * 86_400_000).toISOString();
+      batch.set(ref, {
         userId: input.uid,
         accountId: currentAccountId,
         type: tx.type,
@@ -135,10 +134,8 @@ export async function initializeCustomerAccount(input: InitInput) {
         createdAt,
       });
     });
-    await txBatch.commit();
-    log(input.uid, "transactions batch completes");
 
-    await db.collection(COLLECTIONS.notifications).doc(`notif_${input.uid}_welcome`).set({
+    batch.set(db.collection(COLLECTIONS.notifications).doc(`notif_${input.uid}_welcome`), {
       userId: input.uid,
       type: "system",
       title: "Welcome to Nexora Bank",
@@ -147,9 +144,11 @@ export async function initializeCustomerAccount(input: InitInput) {
       archived: false,
       createdAt: now,
     });
-    log(input.uid, "notification write completes");
 
-    log(input.uid, "server action returns success");
+    log(input.uid, "committing atomic batch", { writes: 10 });
+    await batch.commit();
+    log(input.uid, "succeeded");
+
     return { ok: true as const };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

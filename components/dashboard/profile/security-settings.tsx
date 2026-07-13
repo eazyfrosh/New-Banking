@@ -9,7 +9,7 @@ import {
 import { KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
-import { auth } from "@/lib/firebase/client";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 import { setTransactionPin } from "@/lib/actions/profile-actions";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ export function SecuritySettings({ userId }: { userId: string }) {
   const [pinSubmitting, setPinSubmitting] = React.useState(false);
 
   async function handlePasswordChange() {
+    const auth = getFirebaseAuth();
     if (!auth.currentUser?.email) return;
     if (newPassword.length < 8) {
       toast.error("New password must be at least 8 characters.");

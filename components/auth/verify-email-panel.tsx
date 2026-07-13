@@ -6,7 +6,7 @@ import { sendEmailVerification } from "firebase/auth";
 import { MailCheck, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 
-import { auth } from "@/lib/firebase/client";
+import { getFirebaseAuth } from "@/lib/firebase/client";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +23,7 @@ export function VerifyEmailPanel() {
   }, [loading, user, router]);
 
   async function resend() {
+    const auth = getFirebaseAuth();
     if (!auth.currentUser) return;
     setSending(true);
     try {
@@ -36,6 +37,7 @@ export function VerifyEmailPanel() {
   }
 
   async function checkVerified() {
+    const auth = getFirebaseAuth();
     if (!auth.currentUser) return;
     setChecking(true);
     try {

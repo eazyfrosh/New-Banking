@@ -10,7 +10,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { auth, db } from "@/lib/firebase/client";
+import { getFirebaseAuth, getFirebaseDb } from "@/lib/firebase/client";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { loginSchema, type LoginValues } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
@@ -57,12 +57,12 @@ export function LoginForm() {
     setSubmitting(true);
     try {
       const credential = await signInWithEmailAndPassword(
-        auth,
+        getFirebaseAuth(),
         values.email,
         values.password
       );
 
-      const snap = await getDoc(doc(db, COLLECTIONS.users, credential.user.uid));
+      const snap = await getDoc(doc(getFirebaseDb(), COLLECTIONS.users, credential.user.uid));
       const role = snap.exists() ? snap.data().role : "customer";
 
       toast.success("Welcome back!");

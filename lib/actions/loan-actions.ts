@@ -2,7 +2,7 @@
 
 import { FieldValue } from "firebase-admin/firestore";
 
-import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { calculateMonthlyRepayment } from "@/lib/services/loans";
 import { generateReference } from "@/lib/utils";
@@ -13,8 +13,9 @@ export async function applyForLoan(input: {
   termMonths: number;
   purpose: string;
 }) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
-  const db = adminDb;
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
+  const db = getAdminDb();
 
   const interestRate = 12.5;
   const monthlyRepayment = calculateMonthlyRepayment(input.amount, interestRate, input.termMonths);
@@ -41,8 +42,9 @@ export async function adminReviewLoan(input: {
   approve: boolean;
   disburseAccountId?: string;
 }) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
-  const db = adminDb;
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
+  const db = getAdminDb();
 
   const loanRef = db.collection(COLLECTIONS.loans).doc(input.loanId);
 
@@ -94,8 +96,9 @@ export async function repayLoan(input: {
   accountId: string;
   amount: number;
 }) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
-  const db = adminDb;
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
+  const db = getAdminDb();
 
   const accountRef = db.collection(COLLECTIONS.accounts).doc(input.accountId);
   const loanRef = db.collection(COLLECTIONS.loans).doc(input.loanId);

@@ -15,8 +15,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// A malformed NEXT_PUBLIC_APP_URL would otherwise throw synchronously here,
+// during module evaluation of the root layout - which runs while
+// prerendering every page at build time, failing the whole build over a
+// single bad env var. Fall back to a safe default instead.
+function resolveMetadataBase(): URL {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+  } catch {
+    return new URL("http://localhost:3000");
+  }
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: resolveMetadataBase(),
   title: {
     default: "Nexora Bank — Modern Digital Banking",
     template: "%s · Nexora Bank",

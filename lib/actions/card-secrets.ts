@@ -1,6 +1,6 @@
 "use server";
 
-import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { verifySecret } from "@/lib/actions/crypto";
 import { checkAndRecordAttempt, resetAttempts } from "@/lib/actions/rate-limit";
@@ -10,8 +10,9 @@ export async function revealCardDetails(input: {
   userId: string;
   pin: string;
 }) {
-  if (!isAdminConfigured || !adminDb) {
-    return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) {
+    return { ok: false as const, error: `Server is not configured: ${adminError}` };
   }
 
   const attemptKey = `card-pin:${input.userId}`;
@@ -20,7 +21,7 @@ export async function revealCardDetails(input: {
     return { ok: false as const, error: "Too many attempts. Try again in 15 minutes." };
   }
 
-  const userSnap = await adminDb.collection(COLLECTIONS.users).doc(input.userId).get();
+  const userSnap = await getAdminDb().collection(COLLECTIONS.users).doc(input.userId).get();
   const user = userSnap.data();
 
   if (!user?.transactionPin) {
@@ -32,7 +33,7 @@ export async function revealCardDetails(input: {
 
   await resetAttempts(attemptKey);
 
-  const cardSnap = await adminDb.collection(COLLECTIONS.cards).doc(input.cardId).get();
+  const cardSnap = await getAdminDb().collection(COLLECTIONS.cards).doc(input.cardId).get();
   const card = cardSnap.data();
   if (!card || card.userId !== input.userId) {
     return { ok: false as const, error: "Card not found." };

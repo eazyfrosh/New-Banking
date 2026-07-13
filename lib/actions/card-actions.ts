@@ -1,22 +1,22 @@
 "use server";
 
-import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import type { CardStatus } from "@/types";
 
 async function assertOwnership(cardId: string, userId: string) {
-  if (!adminDb) throw new Error("Server is not configured.");
-  const snap = await adminDb.collection(COLLECTIONS.cards).doc(cardId).get();
+  const snap = await getAdminDb().collection(COLLECTIONS.cards).doc(cardId).get();
   const card = snap.data();
   if (!card || card.userId !== userId) throw new Error("Card not found.");
   return card;
 }
 
 export async function setCardStatus(cardId: string, userId: string, status: CardStatus) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
   try {
     await assertOwnership(cardId, userId);
-    await adminDb.collection(COLLECTIONS.cards).doc(cardId).update({ status });
+    await getAdminDb().collection(COLLECTIONS.cards).doc(cardId).update({ status });
     return { ok: true as const };
   } catch (e) {
     return { ok: false as const, error: e instanceof Error ? e.message : "Failed to update card." };
@@ -28,10 +28,11 @@ export async function updateCardLimits(
   userId: string,
   limits: { dailyLimit: number; monthlyLimit: number }
 ) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
   try {
     await assertOwnership(cardId, userId);
-    await adminDb.collection(COLLECTIONS.cards).doc(cardId).update(limits);
+    await getAdminDb().collection(COLLECTIONS.cards).doc(cardId).update(limits);
     return { ok: true as const };
   } catch (e) {
     return { ok: false as const, error: e instanceof Error ? e.message : "Failed to update limits." };
@@ -39,12 +40,13 @@ export async function updateCardLimits(
 }
 
 export async function replaceCard(cardId: string, userId: string) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
   try {
     const card = await assertOwnership(cardId, userId);
     const newCardNumber = `4${Math.floor(100000000000000 + Math.random() * 899999999999999)}`;
     const newCvv = String(Math.floor(100 + Math.random() * 899));
-    await adminDb.collection(COLLECTIONS.cards).doc(cardId).update({
+    await getAdminDb().collection(COLLECTIONS.cards).doc(cardId).update({
       cardNumber: newCardNumber,
       cvv: newCvv,
       status: "active",
@@ -63,9 +65,10 @@ export async function createCard(input: {
   network: "visa" | "mastercard" | "verve";
   cardholderName: string;
 }) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
   const now = new Date().toISOString();
-  const ref = adminDb.collection(COLLECTIONS.cards).doc();
+  const ref = getAdminDb().collection(COLLECTIONS.cards).doc();
   await ref.set({
     userId: input.userId,
     accountId: input.accountId,

@@ -2,7 +2,7 @@
 
 import { FieldValue } from "firebase-admin/firestore";
 
-import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { verifySecret } from "@/lib/actions/crypto";
 import { checkAndRecordAttempt, resetAttempts } from "@/lib/actions/rate-limit";
@@ -24,8 +24,9 @@ interface TransferInput {
 }
 
 export async function transferFunds(input: TransferInput) {
-  if (!isAdminConfigured || !adminDb) {
-    return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) {
+    return { ok: false as const, error: `Server is not configured: ${adminError}` };
   }
   if (input.amount <= 0) {
     return { ok: false as const, error: "Enter a valid amount." };
@@ -40,7 +41,7 @@ export async function transferFunds(input: TransferInput) {
     };
   }
 
-  const db = adminDb;
+  const db = getAdminDb();
   const userRef = db.collection(COLLECTIONS.users).doc(input.userId);
   const userSnap = await userRef.get();
   const user = userSnap.data();

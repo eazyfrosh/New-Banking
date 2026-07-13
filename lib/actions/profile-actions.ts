@@ -1,14 +1,15 @@
 "use server";
 
-import { adminDb, isAdminConfigured } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { hashSecret } from "@/lib/actions/crypto";
 
 export async function setTransactionPin(userId: string, pin: string) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
   if (!/^\d{4}$/.test(pin)) return { ok: false as const, error: "PIN must be 4 digits." };
 
-  await adminDb.collection(COLLECTIONS.users).doc(userId).update({
+  await getAdminDb().collection(COLLECTIONS.users).doc(userId).update({
     transactionPin: hashSecret(pin),
     updatedAt: new Date().toISOString(),
   });
@@ -30,9 +31,10 @@ export async function updateProfileDetails(
     notificationPrefs: { email: boolean; push: boolean; sms: boolean };
   }>
 ) {
-  if (!isAdminConfigured || !adminDb) return { ok: false as const, error: "Server is not configured." };
+  const adminError = getAdminInitError();
+  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
 
-  await adminDb.collection(COLLECTIONS.users).doc(userId).update({
+  await getAdminDb().collection(COLLECTIONS.users).doc(userId).update({
     ...data,
     updatedAt: new Date().toISOString(),
   });
