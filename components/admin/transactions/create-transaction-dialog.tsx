@@ -41,9 +41,13 @@ export function CreateTransactionDialog() {
 
   async function lookupAccounts() {
     if (!userId) return;
-    const list = await listAccounts(userId);
-    setAccounts(list);
-    setAccountId(list[0]?.id ?? "");
+    try {
+      const list = await listAccounts(userId);
+      setAccounts(list);
+      setAccountId(list[0]?.id ?? "");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not load accounts.");
+    }
   }
 
   async function handleCreate() {

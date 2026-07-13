@@ -61,13 +61,18 @@ export function LoanCard({
   async function handleRepay() {
     if (!accountId) return;
     setSubmitting(true);
-    const result = await repayLoan({ userId, loanId: loan.id, accountId, amount: Number(amount) });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success("Repayment successful");
-      setRepayOpen(false);
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await repayLoan({ userId, loanId: loan.id, accountId, amount: Number(amount) });
+      if (result.ok) {
+        toast.success("Repayment successful");
+        setRepayOpen(false);
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

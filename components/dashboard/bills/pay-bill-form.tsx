@@ -45,21 +45,26 @@ export function PayBillForm({ userId, accounts }: { userId: string; accounts: Ac
       return;
     }
     setSubmitting(true);
-    const result = await payBill({
-      userId,
-      accountId,
-      category,
-      provider,
-      accountReference,
-      amount: Number(amount),
-    });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success("Payment successful");
-      setAccountReference("");
-      setAmount("");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await payBill({
+        userId,
+        accountId,
+        category,
+        provider,
+        accountReference,
+        amount: Number(amount),
+      });
+      if (result.ok) {
+        toast.success("Payment successful");
+        setAccountReference("");
+        setAmount("");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

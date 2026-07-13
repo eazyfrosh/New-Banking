@@ -52,28 +52,33 @@ export function CreatePlanDialog({
   async function handleCreate() {
     if (!name || !fundingAccountId) return;
     setSubmitting(true);
-    const result = await createSavingsPlan({
-      userId,
-      type,
-      name,
-      targetAmount: type === "target" ? Number(targetAmount) : undefined,
-      interestRate: interestByType[type],
-      initialDeposit: Number(initialDeposit || 0),
-      fundingAccountId,
-      endDate:
-        type === "fixed_deposit"
-          ? new Date(Date.now() + 1000 * 60 * 60 * 24 * 180).toISOString()
-          : undefined,
-    });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success("Savings plan created");
-      setOpen(false);
-      setName("");
-      setTargetAmount("");
-      setInitialDeposit("");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await createSavingsPlan({
+        userId,
+        type,
+        name,
+        targetAmount: type === "target" ? Number(targetAmount) : undefined,
+        interestRate: interestByType[type],
+        initialDeposit: Number(initialDeposit || 0),
+        fundingAccountId,
+        endDate:
+          type === "fixed_deposit"
+            ? new Date(Date.now() + 1000 * 60 * 60 * 24 * 180).toISOString()
+            : undefined,
+      });
+      if (result.ok) {
+        toast.success("Savings plan created");
+        setOpen(false);
+        setName("");
+        setTargetAmount("");
+        setInitialDeposit("");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

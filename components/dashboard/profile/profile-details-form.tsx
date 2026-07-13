@@ -27,16 +27,21 @@ export function ProfileDetailsForm({ profile }: { profile: UserProfile }) {
 
   async function handleSave() {
     setSubmitting(true);
-    const result = await updateProfileDetails(profile.uid, {
-      firstName,
-      lastName,
-      phone,
-      address,
-      dateOfBirth,
-    });
-    setSubmitting(false);
-    if (result.ok) toast.success("Profile updated");
-    else toast.error(result.error);
+    try {
+      const result = await updateProfileDetails(profile.uid, {
+        firstName,
+        lastName,
+        phone,
+        address,
+        dateOfBirth,
+      });
+      if (result.ok) toast.success("Profile updated");
+      else toast.error(result.error);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {

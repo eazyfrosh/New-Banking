@@ -48,19 +48,24 @@ export function SavingsPlanCard({
   async function handleFund() {
     if (!primaryAccount || !amount) return;
     setSubmitting(true);
-    const result = await fundSavingsPlan({
-      userId,
-      planId: plan.id,
-      fundingAccountId: primaryAccount.id,
-      amount: Number(amount),
-    });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success("Plan funded successfully");
-      setOpen(false);
-      setAmount("");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await fundSavingsPlan({
+        userId,
+        planId: plan.id,
+        fundingAccountId: primaryAccount.id,
+        amount: Number(amount),
+      });
+      if (result.ok) {
+        toast.success("Plan funded successfully");
+        setOpen(false);
+        setAmount("");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

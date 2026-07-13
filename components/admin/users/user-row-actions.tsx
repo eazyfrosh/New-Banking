@@ -60,9 +60,13 @@ export function UserRowActions({ user }: { user: UserProfile }) {
 
   async function openBalanceDialog() {
     setBalanceOpen(true);
-    const list = await listAccounts(user.uid);
-    setAccounts(list);
-    setAccountId(list[0]?.id ?? "");
+    try {
+      const list = await listAccounts(user.uid);
+      setAccounts(list);
+      setAccountId(list[0]?.id ?? "");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not load accounts.");
+    }
   }
 
   async function toggleStatus() {

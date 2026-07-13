@@ -44,13 +44,18 @@ export function AddCardDialog({
   async function handleCreate() {
     if (!accountId) return;
     setSubmitting(true);
-    const result = await createCard({ userId, accountId, type, network, cardholderName });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success(`New ${type} card issued`);
-      setOpen(false);
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await createCard({ userId, accountId, type, network, cardholderName });
+      if (result.ok) {
+        toast.success(`New ${type} card issued`);
+        setOpen(false);
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

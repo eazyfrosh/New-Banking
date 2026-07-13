@@ -42,21 +42,26 @@ export function BuyInvestmentDialog({ userId, accounts }: { userId: string; acco
   async function handleBuy() {
     if (!accountId) return;
     setSubmitting(true);
-    const result = await buyInvestment({
-      userId,
-      accountId,
-      type: instrument.type,
-      symbol: instrument.symbol,
-      name: instrument.name,
-      units: Number(units),
-      price: instrument.price,
-    });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success(`Bought ${units} ${instrument.symbol}`);
-      setOpen(false);
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await buyInvestment({
+        userId,
+        accountId,
+        type: instrument.type,
+        symbol: instrument.symbol,
+        name: instrument.name,
+        units: Number(units),
+        price: instrument.price,
+      });
+      if (result.ok) {
+        toast.success(`Bought ${units} ${instrument.symbol}`);
+        setOpen(false);
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

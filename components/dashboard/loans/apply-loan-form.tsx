@@ -24,13 +24,18 @@ export function ApplyLoanForm({ userId }: { userId: string }) {
       return;
     }
     setSubmitting(true);
-    const result = await applyForLoan({ userId, amount, termMonths, purpose });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success("Loan application submitted for review");
-      setPurpose("");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await applyForLoan({ userId, amount, termMonths, purpose });
+      if (result.ok) {
+        toast.success("Loan application submitted for review");
+        setPurpose("");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

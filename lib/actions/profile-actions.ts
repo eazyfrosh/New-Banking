@@ -9,12 +9,15 @@ export async function setTransactionPin(userId: string, pin: string) {
   if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
   if (!/^\d{4}$/.test(pin)) return { ok: false as const, error: "PIN must be 4 digits." };
 
-  await getAdminDb().collection(COLLECTIONS.users).doc(userId).update({
-    transactionPin: hashSecret(pin),
-    updatedAt: new Date().toISOString(),
-  });
-
-  return { ok: true as const };
+  try {
+    await getAdminDb().collection(COLLECTIONS.users).doc(userId).update({
+      transactionPin: hashSecret(pin),
+      updatedAt: new Date().toISOString(),
+    });
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : "Failed to set PIN." };
+  }
 }
 
 export async function updateProfileDetails(
@@ -34,10 +37,13 @@ export async function updateProfileDetails(
   const adminError = getAdminInitError();
   if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
 
-  await getAdminDb().collection(COLLECTIONS.users).doc(userId).update({
-    ...data,
-    updatedAt: new Date().toISOString(),
-  });
-
-  return { ok: true as const };
+  try {
+    await getAdminDb().collection(COLLECTIONS.users).doc(userId).update({
+      ...data,
+      updatedAt: new Date().toISOString(),
+    });
+    return { ok: true as const };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : "Failed to update profile." };
+  }
 }

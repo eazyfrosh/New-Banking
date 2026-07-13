@@ -57,53 +57,73 @@ export function CardPanel({
 
   async function toggleFreeze() {
     setBusy(true);
-    const next = card.status === "frozen" ? "active" : "frozen";
-    const result = await setCardStatus(card.id, userId, next);
-    if (result.ok) {
-      toast.success(next === "frozen" ? "Card frozen" : "Card unfrozen");
-    } else {
-      toast.error(result.error);
+    try {
+      const next = card.status === "frozen" ? "active" : "frozen";
+      const result = await setCardStatus(card.id, userId, next);
+      if (result.ok) {
+        toast.success(next === "frozen" ? "Card frozen" : "Card unfrozen");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function handleReplace() {
     setBusy(true);
-    const result = await replaceCard(card.id, userId);
-    if (result.ok) {
-      toast.success("Card replaced. New details generated.");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await replaceCard(card.id, userId);
+      if (result.ok) {
+        toast.success("Card replaced. New details generated.");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function handleReveal() {
     setBusy(true);
-    const result = await revealCardDetails({ cardId: card.id, userId, pin });
-    if (result.ok) {
-      setRevealed(result);
-      setPinDialogOpen(false);
-      setPin("");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await revealCardDetails({ cardId: card.id, userId, pin });
+      if (result.ok) {
+        setRevealed(result);
+        setPinDialogOpen(false);
+        setPin("");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function handleUpdateLimits() {
     setBusy(true);
-    const result = await updateCardLimits(card.id, userId, {
-      dailyLimit: Number(dailyLimit),
-      monthlyLimit: Number(monthlyLimit),
-    });
-    if (result.ok) {
-      toast.success("Card limits updated");
-      setLimitsOpen(false);
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await updateCardLimits(card.id, userId, {
+        dailyLimit: Number(dailyLimit),
+        monthlyLimit: Number(monthlyLimit),
+      });
+      if (result.ok) {
+        toast.success("Card limits updated");
+        setLimitsOpen(false);
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (

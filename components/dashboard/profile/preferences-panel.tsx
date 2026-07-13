@@ -35,14 +35,19 @@ export function PreferencesPanel({ profile }: { profile: UserProfile }) {
 
   async function handleSave() {
     setSubmitting(true);
-    const result = await updateProfileDetails(profile.uid, {
-      language,
-      currency,
-      notificationPrefs: prefs,
-    });
-    setSubmitting(false);
-    if (result.ok) toast.success("Preferences saved");
-    else toast.error(result.error);
+    try {
+      const result = await updateProfileDetails(profile.uid, {
+        language,
+        currency,
+        notificationPrefs: prefs,
+      });
+      if (result.ok) toast.success("Preferences saved");
+      else toast.error(result.error);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (

@@ -41,18 +41,23 @@ export function HoldingCard({
   async function handleSell() {
     if (!account) return;
     setSubmitting(true);
-    const result = await sellInvestment({
-      userId,
-      accountId: account.id,
-      investmentId: investment.id,
-      units: Number(sellUnits),
-    });
-    setSubmitting(false);
-    if (result.ok) {
-      toast.success("Sold successfully");
-      setOpen(false);
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await sellInvestment({
+        userId,
+        accountId: account.id,
+        investmentId: investment.id,
+        units: Number(sellUnits),
+      });
+      if (result.ok) {
+        toast.success("Sold successfully");
+        setOpen(false);
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 

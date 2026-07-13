@@ -15,26 +15,30 @@ export async function applyForLoan(input: {
 }) {
   const adminError = getAdminInitError();
   if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
-  const db = getAdminDb();
 
-  const interestRate = 12.5;
-  const monthlyRepayment = calculateMonthlyRepayment(input.amount, interestRate, input.termMonths);
-  const now = new Date().toISOString();
+  try {
+    const db = getAdminDb();
+    const interestRate = 12.5;
+    const monthlyRepayment = calculateMonthlyRepayment(input.amount, interestRate, input.termMonths);
+    const now = new Date().toISOString();
 
-  const ref = db.collection(COLLECTIONS.loans).doc();
-  await ref.set({
-    userId: input.userId,
-    amount: input.amount,
-    interestRate,
-    termMonths: input.termMonths,
-    purpose: input.purpose,
-    status: "pending",
-    monthlyRepayment,
-    outstandingBalance: input.amount,
-    createdAt: now,
-  });
+    const ref = db.collection(COLLECTIONS.loans).doc();
+    await ref.set({
+      userId: input.userId,
+      amount: input.amount,
+      interestRate,
+      termMonths: input.termMonths,
+      purpose: input.purpose,
+      status: "pending",
+      monthlyRepayment,
+      outstandingBalance: input.amount,
+      createdAt: now,
+    });
 
-  return { ok: true as const, id: ref.id };
+    return { ok: true as const, id: ref.id };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : "Failed to submit loan application." };
+  }
 }
 
 export async function adminReviewLoan(input: {

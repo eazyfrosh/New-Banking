@@ -21,23 +21,27 @@ export async function revealCardDetails(input: {
     return { ok: false as const, error: "Too many attempts. Try again in 15 minutes." };
   }
 
-  const userSnap = await getAdminDb().collection(COLLECTIONS.users).doc(input.userId).get();
-  const user = userSnap.data();
+  try {
+    const userSnap = await getAdminDb().collection(COLLECTIONS.users).doc(input.userId).get();
+    const user = userSnap.data();
 
-  if (!user?.transactionPin) {
-    return { ok: false as const, error: "Set up a transaction PIN in Security Settings first." };
+    if (!user?.transactionPin) {
+      return { ok: false as const, error: "Set up a transaction PIN in Security Settings first." };
+    }
+    if (!verifySecret(input.pin, user.transactionPin)) {
+      return { ok: false as const, error: `Incorrect PIN. ${attempt.remaining} attempts remaining.` };
+    }
+
+    await resetAttempts(attemptKey);
+
+    const cardSnap = await getAdminDb().collection(COLLECTIONS.cards).doc(input.cardId).get();
+    const card = cardSnap.data();
+    if (!card || card.userId !== input.userId) {
+      return { ok: false as const, error: "Card not found." };
+    }
+
+    return { ok: true as const, cardNumber: card.cardNumber, cvv: card.cvv, pin: card.pin };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : "Failed to reveal card details." };
   }
-  if (!verifySecret(input.pin, user.transactionPin)) {
-    return { ok: false as const, error: `Incorrect PIN. ${attempt.remaining} attempts remaining.` };
-  }
-
-  await resetAttempts(attemptKey);
-
-  const cardSnap = await getAdminDb().collection(COLLECTIONS.cards).doc(input.cardId).get();
-  const card = cardSnap.data();
-  if (!card || card.userId !== input.userId) {
-    return { ok: false as const, error: "Card not found." };
-  }
-
-  return { ok: true as const, cardNumber: card.cardNumber, cvv: card.cvv, pin: card.pin };
 }

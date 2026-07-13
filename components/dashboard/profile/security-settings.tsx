@@ -59,14 +59,19 @@ export function SecuritySettings({ userId }: { userId: string }) {
       return;
     }
     setPinSubmitting(true);
-    const result = await setTransactionPin(userId, pin);
-    setPinSubmitting(false);
-    if (result.ok) {
-      toast.success("Transaction PIN updated");
-      setPin("");
-      setConfirmPin("");
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await setTransactionPin(userId, pin);
+      if (result.ok) {
+        toast.success("Transaction PIN updated");
+        setPin("");
+        setConfirmPin("");
+      } else {
+        toast.error(result.error);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+    } finally {
+      setPinSubmitting(false);
     }
   }
 

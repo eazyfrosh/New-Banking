@@ -67,24 +67,29 @@ export async function createCard(input: {
 }) {
   const adminError = getAdminInitError();
   if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
-  const now = new Date().toISOString();
-  const ref = getAdminDb().collection(COLLECTIONS.cards).doc();
-  await ref.set({
-    userId: input.userId,
-    accountId: input.accountId,
-    type: input.type,
-    network: input.network,
-    cardholderName: input.cardholderName.toUpperCase(),
-    cardNumber: `4${Math.floor(100000000000000 + Math.random() * 899999999999999)}`,
-    expiryMonth: "12",
-    expiryYear: String(new Date().getFullYear() + 4),
-    cvv: String(Math.floor(100 + Math.random() * 899)),
-    pin: "1234",
-    status: "active",
-    dailyLimit: input.type === "virtual" ? 1000 : 2000,
-    monthlyLimit: input.type === "virtual" ? 10000 : 20000,
-    color: "from-slate-800 to-slate-600",
-    createdAt: now,
-  });
-  return { ok: true as const, id: ref.id };
+
+  try {
+    const now = new Date().toISOString();
+    const ref = getAdminDb().collection(COLLECTIONS.cards).doc();
+    await ref.set({
+      userId: input.userId,
+      accountId: input.accountId,
+      type: input.type,
+      network: input.network,
+      cardholderName: input.cardholderName.toUpperCase(),
+      cardNumber: `4${Math.floor(100000000000000 + Math.random() * 899999999999999)}`,
+      expiryMonth: "12",
+      expiryYear: String(new Date().getFullYear() + 4),
+      cvv: String(Math.floor(100 + Math.random() * 899)),
+      pin: "1234",
+      status: "active",
+      dailyLimit: input.type === "virtual" ? 1000 : 2000,
+      monthlyLimit: input.type === "virtual" ? 10000 : 20000,
+      color: "from-slate-800 to-slate-600",
+      createdAt: now,
+    });
+    return { ok: true as const, id: ref.id };
+  } catch (e) {
+    return { ok: false as const, error: e instanceof Error ? e.message : "Failed to create card." };
+  }
 }
