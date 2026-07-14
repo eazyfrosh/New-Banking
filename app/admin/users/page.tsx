@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Search, Users } from "lucide-react";
 
 import { useAllUsers } from "@/hooks/use-admin-data";
@@ -74,7 +75,7 @@ export default function AdminUsersPage() {
               {filtered.map((user) => (
                 <TableRow key={user.uid}>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <Link href={`/admin/users/${user.uid}`} className="flex items-center gap-2 hover:underline">
                       <Avatar className="size-8">
                         <AvatarFallback className="text-[10px]">
                           {initials(`${user.firstName} ${user.lastName}`)}
@@ -83,7 +84,7 @@ export default function AdminUsersPage() {
                       <span className="font-medium">
                         {user.firstName} {user.lastName}
                       </span>
-                    </div>
+                    </Link>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{user.email}</TableCell>
                   <TableCell className="capitalize">{user.role}</TableCell>

@@ -96,6 +96,7 @@ export async function initializeCustomerAccount(input: InitInput) {
           lastName: input.lastName,
           role: "customer",
           status: "active",
+          reviewStatus: "pending",
           kycStatus: "unverified",
           currency: "USD",
           language: "en",

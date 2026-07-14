@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/components/providers/auth-provider";
 import { adminCreateUser } from "@/lib/actions/admin-actions";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 
 export function CreateUserDialog() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
   const [firstName, setFirstName] = React.useState("");
@@ -34,9 +36,11 @@ export function CreateUserDialog() {
       toast.error("Fill in all fields. Password must be at least 8 characters.");
       return;
     }
+    if (!user) return;
     setSubmitting(true);
     try {
-      const result = await adminCreateUser({ firstName, lastName, email, password });
+      const idToken = await user.getIdToken();
+      const result = await adminCreateUser(idToken, { firstName, lastName, email, password });
       if (result.ok) {
         toast.success("Customer account created");
         setOpen(false);

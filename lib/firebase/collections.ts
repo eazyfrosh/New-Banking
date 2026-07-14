@@ -10,4 +10,5 @@ export const COLLECTIONS = {
   notifications: "notifications",
   supportTickets: "supportTickets",
   fraudAlerts: "fraudAlerts",
+  auditLogs: "auditLogs",
 } as const;

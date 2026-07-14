@@ -24,3 +24,8 @@ export function subscribeCards(
     onError
   );
 }
+
+/** Admin-wide read across every customer's cards. Single-field orderBy only (no where) so it never needs a composite index. */
+export function listAllCards() {
+  return getMany<BankCard>(COLLECTIONS.cards, orderBy("createdAt", "desc"));
+}

@@ -4,6 +4,7 @@ import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { useAuth } from "@/components/providers/auth-provider";
 import { adminReviewLoan } from "@/lib/actions/loan-actions";
 import { listAccounts } from "@/lib/services/accounts";
 import type { Loan } from "@/types";
@@ -11,6 +12,7 @@ import type { Loan } from "@/types";
 import { Button } from "@/components/ui/button";
 
 export function LoanRowActions({ loan }: { loan: Loan }) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [busy, setBusy] = React.useState(false);
 
@@ -19,11 +21,13 @@ export function LoanRowActions({ loan }: { loan: Loan }) {
   }
 
   async function approve() {
+    if (!user) return;
     setBusy(true);
     try {
+      const idToken = await user.getIdToken();
       const accounts = await listAccounts(loan.userId);
       const currentAccount = accounts.find((a) => a.type === "current");
-      const result = await adminReviewLoan({
+      const result = await adminReviewLoan(idToken, {
         loanId: loan.id,
         approve: true,
         disburseAccountId: currentAccount?.id,
@@ -42,9 +46,11 @@ export function LoanRowActions({ loan }: { loan: Loan }) {
   }
 
   async function reject() {
+    if (!user) return;
     setBusy(true);
     try {
-      const result = await adminReviewLoan({ loanId: loan.id, approve: false });
+      const idToken = await user.getIdToken();
+      const result = await adminReviewLoan(idToken, { loanId: loan.id, approve: false });
       if (result.ok) {
         toast.success("Loan rejected");
         invalidate();

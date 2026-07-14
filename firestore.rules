@@ -84,6 +84,11 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // server-only via Admin SDK, from writeAuditLog()
+    }
+
     match /rateLimits/{key} {
       allow read, write: if false; // server-only via Admin SDK
     }

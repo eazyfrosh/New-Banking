@@ -10,6 +10,7 @@ import {
   Megaphone,
   PiggyBank,
   Receipt,
+  ScrollText,
   Settings,
   ShieldAlert,
   TicketCheck,
@@ -45,4 +46,5 @@ export const adminNav: NavItem[] = [
   { href: "/admin/support", label: "Support tickets", icon: TicketCheck },
   { href: "/admin/fraud", label: "Fraud alerts", icon: ShieldAlert },
   { href: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
+  { href: "/admin/audit-log", label: "Audit log", icon: ScrollText },
 ];

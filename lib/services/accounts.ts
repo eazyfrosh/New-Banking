@@ -24,3 +24,8 @@ export function subscribeAccounts(
     onError
   );
 }
+
+/** Admin-wide read across every customer's accounts. Single-field orderBy only (no where) so it never needs a composite index. */
+export function listAllAccounts() {
+  return getMany<Account>(COLLECTIONS.accounts, orderBy("createdAt", "desc"));
+}

@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/components/providers/auth-provider";
 import { adminReverseTransaction, adminReviewTransfer } from "@/lib/actions/admin-actions";
 import type { Transaction } from "@/types";
 
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function TransactionRowActions({ transaction }: { transaction: Transaction }) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [busy, setBusy] = React.useState(false);
 
@@ -25,9 +27,11 @@ export function TransactionRowActions({ transaction }: { transaction: Transactio
   }
 
   async function reverse() {
+    if (!user) return;
     setBusy(true);
     try {
-      const result = await adminReverseTransaction(transaction.id);
+      const idToken = await user.getIdToken();
+      const result = await adminReverseTransaction(idToken, transaction.id);
       if (result.ok) {
         toast.success("Transaction reversed");
         invalidate();
@@ -42,9 +46,11 @@ export function TransactionRowActions({ transaction }: { transaction: Transactio
   }
 
   async function review(approve: boolean) {
+    if (!user) return;
     setBusy(true);
     try {
-      const result = await adminReviewTransfer(transaction.id, approve);
+      const idToken = await user.getIdToken();
+      const result = await adminReviewTransfer(idToken, transaction.id, approve);
       if (result.ok) {
         toast.success(approve ? "Transfer approved" : "Transfer rejected");
         invalidate();

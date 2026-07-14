@@ -3,6 +3,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 
 import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
+import { requireAdmin, writeAuditLog } from "@/lib/actions/admin-guard";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { calculateMonthlyRepayment } from "@/lib/services/loans";
 import { generateReference } from "@/lib/utils";
@@ -41,26 +42,29 @@ export async function applyForLoan(input: {
   }
 }
 
-export async function adminReviewLoan(input: {
-  loanId: string;
-  approve: boolean;
-  disburseAccountId?: string;
-}) {
-  const adminError = getAdminInitError();
-  if (adminError) return { ok: false as const, error: `Server is not configured: ${adminError}` };
+export async function adminReviewLoan(
+  idToken: string,
+  input: {
+    loanId: string;
+    approve: boolean;
+    disburseAccountId?: string;
+  }
+) {
+  const admin = await requireAdmin(idToken);
+  if (!admin.ok) return admin;
   const db = getAdminDb();
 
   const loanRef = db.collection(COLLECTIONS.loans).doc(input.loanId);
 
   try {
-    await db.runTransaction(async (trx) => {
+    const targetUserId = await db.runTransaction(async (trx) => {
       const loanSnap = await trx.get(loanRef);
       const loan = loanSnap.data();
       if (!loan) throw new Error("Loan not found.");
 
       if (!input.approve) {
         trx.update(loanRef, { status: "rejected" });
-        return;
+        return loan.userId as string;
       }
 
       const now = new Date().toISOString();
@@ -86,6 +90,16 @@ export async function adminReviewLoan(input: {
           createdAt: now,
         });
       }
+
+      return loan.userId as string;
+    });
+
+    await writeAuditLog({
+      adminUid: admin.uid,
+      adminEmail: admin.email,
+      action: input.approve ? "admin.approveLoan" : "admin.rejectLoan",
+      targetUserId,
+      after: { loanId: input.loanId, disburseAccountId: input.disburseAccountId },
     });
 
     return { ok: true as const };

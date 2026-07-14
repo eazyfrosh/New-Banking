@@ -22,11 +22,16 @@ export interface UserProfile {
     sms: boolean;
   };
   transactionPin?: string;
+  /** Non-blocking admin review queue for new registrations - never gates dashboard/login access. Absent on accounts created before this field existed. */
+  reviewStatus?: "pending" | "approved" | "rejected";
   createdAt: string;
   updatedAt: string;
 }
 
 export type AccountType = "current" | "savings" | "fixed_deposit";
+
+/** Absent/undefined is treated as "active" everywhere - existing accounts predate this field. */
+export type AccountStatus = "active" | "frozen" | "closed";
 
 export interface Account {
   id: string;
@@ -39,6 +44,7 @@ export interface Account {
   interestRate?: number;
   maturityDate?: string;
   isPrimary?: boolean;
+  status?: AccountStatus;
   createdAt: string;
 }
 
@@ -244,4 +250,16 @@ export interface ExchangeRate {
   currency: string;
   rate: number;
   change: number;
+}
+
+export interface AuditLog {
+  id: string;
+  adminUid: string;
+  adminEmail: string;
+  action: string;
+  targetUserId: string | null;
+  before: unknown;
+  after: unknown;
+  ip: string | null;
+  createdAt: string;
 }

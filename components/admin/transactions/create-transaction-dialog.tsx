@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/components/providers/auth-provider";
 import { adminCreateTransaction } from "@/lib/actions/admin-actions";
 import { listAccounts } from "@/lib/services/accounts";
 import type { Account } from "@/types";
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/select";
 
 export function CreateTransactionDialog() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
   const [userId, setUserId] = React.useState("");
@@ -51,13 +53,14 @@ export function CreateTransactionDialog() {
   }
 
   async function handleCreate() {
-    if (!userId || !accountId || !amount || !description) {
+    if (!userId || !accountId || !amount || !description || !user) {
       toast.error("Fill in all fields.");
       return;
     }
     setSubmitting(true);
     try {
-      const result = await adminCreateTransaction({
+      const idToken = await user.getIdToken();
+      const result = await adminCreateTransaction(idToken, {
         userId,
         accountId,
         amount: Number(amount),

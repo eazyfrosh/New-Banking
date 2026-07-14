@@ -4,6 +4,7 @@ import * as React from "react";
 import { Megaphone } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/components/providers/auth-provider";
 import { adminBroadcastNotification } from "@/lib/actions/admin-actions";
 
 import { Button } from "@/components/ui/button";
@@ -20,19 +21,21 @@ import {
 } from "@/components/ui/select";
 
 export default function AdminBroadcastPage() {
+  const { user } = useAuth();
   const [title, setTitle] = React.useState("");
   const [message, setMessage] = React.useState("");
   const [type, setType] = React.useState<"system" | "promo" | "security">("system");
   const [submitting, setSubmitting] = React.useState(false);
 
   async function handleSend() {
-    if (!title || !message) {
+    if (!title || !message || !user) {
       toast.error("Fill in a title and message.");
       return;
     }
     setSubmitting(true);
     try {
-      const result = await adminBroadcastNotification({ title, message, type });
+      const idToken = await user.getIdToken();
+      const result = await adminBroadcastNotification(idToken, { title, message, type });
       if (result.ok) {
         toast.success("Broadcast sent to all users");
         setTitle("");

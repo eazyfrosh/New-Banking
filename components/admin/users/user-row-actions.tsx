@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/components/providers/auth-provider";
 import { adminAdjustBalance, adminDeleteUser, adminSetUserStatus } from "@/lib/actions/admin-actions";
 import { listAccounts } from "@/lib/services/accounts";
 import { formatCurrency } from "@/lib/utils";
@@ -45,6 +46,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function UserRowActions({ user }: { user: UserProfile }) {
+  const { user: authUser } = useAuth();
   const queryClient = useQueryClient();
   const [balanceOpen, setBalanceOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
@@ -70,10 +72,12 @@ export function UserRowActions({ user }: { user: UserProfile }) {
   }
 
   async function toggleStatus() {
+    if (!authUser) return;
     setBusy(true);
     try {
+      const idToken = await authUser.getIdToken();
       const next = user.status === "active" ? "suspended" : "active";
-      const result = await adminSetUserStatus(user.uid, next);
+      const result = await adminSetUserStatus(idToken, user.uid, next);
       if (result.ok) {
         toast.success(next === "suspended" ? "User suspended" : "User reactivated");
         invalidate();
@@ -88,10 +92,15 @@ export function UserRowActions({ user }: { user: UserProfile }) {
   }
 
   async function handleAdjustBalance() {
-    if (!accountId || !amount) return;
+    if (!accountId || !amount || !authUser) return;
     setBusy(true);
     try {
-      const result = await adminAdjustBalance({ accountId, amount: Number(amount), reason: reason || "Manual adjustment" });
+      const idToken = await authUser.getIdToken();
+      const result = await adminAdjustBalance(idToken, {
+        accountId,
+        amount: Number(amount),
+        reason: reason || "Manual adjustment",
+      });
       if (result.ok) {
         toast.success("Balance adjusted");
         setBalanceOpen(false);
@@ -108,9 +117,11 @@ export function UserRowActions({ user }: { user: UserProfile }) {
   }
 
   async function handleDelete() {
+    if (!authUser) return;
     setBusy(true);
     try {
-      const result = await adminDeleteUser(user.uid);
+      const idToken = await authUser.getIdToken();
+      const result = await adminDeleteUser(idToken, user.uid);
       if (result.ok) {
         toast.success("User deleted");
         invalidate();
