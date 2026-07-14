@@ -10,6 +10,7 @@ import { transactionLabels, statusColors } from "@/lib/transaction-meta";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Transaction, TransactionStatus } from "@/types";
 
+import { TransactionReceiptDialog } from "@/components/shared/transaction-receipt-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,7 @@ export function TransactionsExplorer() {
   const [direction, setDirection] = React.useState<"all" | "credit" | "debit">("all");
   const [sortDir, setSortDir] = React.useState<"desc" | "asc">("desc");
   const [page, setPage] = React.useState(1);
+  const [selectedTx, setSelectedTx] = React.useState<Transaction | null>(null);
 
   const filtered = React.useMemo(() => {
     let result: Transaction[] = transactions;
@@ -176,7 +178,11 @@ export function TransactionsExplorer() {
             </TableHeader>
             <TableBody>
               {paginated.map((tx) => (
-                <TableRow key={tx.id}>
+                <TableRow
+                  key={tx.id}
+                  className="hover:bg-muted/50 cursor-pointer"
+                  onClick={() => setSelectedTx(tx)}
+                >
                   <TableCell className="font-medium">{tx.description}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {transactionLabels[tx.type]}
@@ -226,6 +232,11 @@ export function TransactionsExplorer() {
           </div>
         </div>
       )}
+
+      <TransactionReceiptDialog
+        transaction={selectedTx}
+        onOpenChange={(open) => !open && setSelectedTx(null)}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Receipt } from "lucide-react";
 
@@ -11,10 +12,12 @@ import { useInvestments } from "@/hooks/use-investments";
 import { investmentValue, investmentPnL } from "@/lib/services/investments";
 import { exchangeRates } from "@/lib/exchange-rates";
 import { formatCurrency } from "@/lib/utils";
+import type { Transaction } from "@/types";
 
 import { AccountCard } from "@/components/dashboard/account-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { TransactionRow } from "@/components/dashboard/transaction-row";
+import { TransactionReceiptDialog } from "@/components/shared/transaction-receipt-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { AnimatedCounter } from "@/components/shared/animated-counter";
 import { Button } from "@/components/ui/button";
@@ -27,6 +30,7 @@ export default function DashboardPage() {
   const { data: transactions, loading: txLoading } = useTransactions(profile?.uid);
   const { data: loans } = useLoans(profile?.uid);
   const { data: investments } = useInvestments(profile?.uid);
+  const [selectedTx, setSelectedTx] = React.useState<Transaction | null>(null);
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
   const activeLoan = loans.find((loan) => loan.status === "active");
@@ -84,7 +88,9 @@ export default function DashboardPage() {
                 description="Your recent activity will show up here."
               />
             ) : (
-              transactions.slice(0, 6).map((tx) => <TransactionRow key={tx.id} transaction={tx} />)
+              transactions
+                .slice(0, 6)
+                .map((tx) => <TransactionRow key={tx.id} transaction={tx} onClick={setSelectedTx} />)
             )}
           </CardContent>
         </Card>
@@ -167,6 +173,11 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      <TransactionReceiptDialog
+        transaction={selectedTx}
+        onOpenChange={(open) => !open && setSelectedTx(null)}
+      />
     </div>
   );
 }

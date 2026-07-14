@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 
 import { CreateTransactionDialog } from "@/components/admin/transactions/create-transaction-dialog";
 import { TransactionRowActions } from "@/components/admin/transactions/transaction-row-actions";
+import { TransactionReceiptDialog } from "@/components/shared/transaction-receipt-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,10 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { Transaction } from "@/types";
 
 export default function AdminTransactionsPage() {
   const { data: transactions, isLoading } = useAllTransactions();
   const [query, setQuery] = React.useState("");
+  const [selectedTx, setSelectedTx] = React.useState<Transaction | null>(null);
 
   const filtered = (transactions ?? []).filter(
     (tx) =>
@@ -65,7 +68,11 @@ export default function AdminTransactionsPage() {
             </TableHeader>
             <TableBody>
               {filtered.slice(0, 100).map((tx) => (
-                <TableRow key={tx.id}>
+                <TableRow
+                  key={tx.id}
+                  className="hover:bg-muted/50 cursor-pointer"
+                  onClick={() => setSelectedTx(tx)}
+                >
                   <TableCell className="font-medium">{tx.description}</TableCell>
                   <TableCell className="text-muted-foreground">{transactionLabels[tx.type]}</TableCell>
                   <TableCell className="text-muted-foreground">{formatDate(tx.createdAt)}</TableCell>
@@ -78,7 +85,7 @@ export default function AdminTransactionsPage() {
                       {tx.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <TransactionRowActions transaction={tx} />
                   </TableCell>
                 </TableRow>
@@ -87,6 +94,11 @@ export default function AdminTransactionsPage() {
           </Table>
         </div>
       )}
+
+      <TransactionReceiptDialog
+        transaction={selectedTx}
+        onOpenChange={(open) => !open && setSelectedTx(null)}
+      />
     </div>
   );
 }

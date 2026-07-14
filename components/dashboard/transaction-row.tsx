@@ -3,12 +3,37 @@ import { transactionIcons, transactionLabels, statusColors } from "@/lib/transac
 import { Badge } from "@/components/ui/badge";
 import type { Transaction } from "@/types";
 
-export function TransactionRow({ transaction }: { transaction: Transaction }) {
+export function TransactionRow({
+  transaction,
+  onClick,
+}: {
+  transaction: Transaction;
+  onClick?: (transaction: Transaction) => void;
+}) {
   const Icon = transactionIcons[transaction.type];
   const isCredit = transaction.direction === "credit";
 
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div
+      className={
+        onClick
+          ? "hover:bg-muted/50 -mx-2 flex cursor-pointer items-center gap-3 rounded-lg px-2 py-3 transition-colors"
+          : "flex items-center gap-3 py-3"
+      }
+      onClick={onClick ? () => onClick(transaction) : undefined}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick(transaction);
+              }
+            }
+          : undefined
+      }
+    >
       <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-xl">
         <Icon className="size-4.5" />
       </span>

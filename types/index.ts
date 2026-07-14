@@ -84,6 +84,8 @@ export interface Transaction {
   description: string;
   counterparty?: string;
   counterpartyAccount?: string;
+  /** Not currently written by any flow - present only for forward-compatibility with the receipt UI, which reads it if it's ever set. */
+  recipientBank?: string;
   category?: string;
   recurring?: boolean;
   recurringInterval?: "daily" | "weekly" | "monthly";

@@ -59,3 +59,48 @@ export function exportTransactionsToPdf(transactions: Transaction[]) {
 
   doc.save("transactions.pdf");
 }
+
+export function exportReceiptToPdf(
+  transaction: Transaction,
+  extra: { senderName?: string; recipientName?: string }
+) {
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text("Novaofficial — Transaction Receipt", 14, 18);
+  doc.setFontSize(10);
+  doc.setTextColor(120);
+  doc.text(`Generated ${formatDate(new Date())}`, 14, 24);
+
+  doc.setFontSize(20);
+  doc.setTextColor(20);
+  doc.text(
+    `${transaction.direction === "credit" ? "+" : "-"}${formatCurrency(transaction.amount, transaction.currency)}`,
+    14,
+    38
+  );
+  doc.setFontSize(11);
+  doc.setTextColor(90);
+  doc.text(`${transactionLabels[transaction.type]} · ${transaction.status.toUpperCase()}`, 14, 45);
+
+  const rows: [string, string][] = [
+    ["Reference number", transaction.reference],
+    ["Transaction ID", transaction.id],
+    ["Date & time", formatDate(transaction.createdAt, { dateStyle: "medium", timeStyle: "short" })],
+  ];
+  if (extra.senderName) rows.push(["Sender", extra.senderName]);
+  if (extra.recipientName) rows.push(["Recipient", extra.recipientName]);
+  if (transaction.counterpartyAccount) rows.push(["Recipient account", transaction.counterpartyAccount]);
+  rows.push(["Description", transaction.description]);
+  if (transaction.fee) rows.push(["Fee", formatCurrency(transaction.fee, transaction.currency)]);
+  rows.push(["Currency", transaction.currency]);
+
+  autoTable(doc, {
+    startY: 55,
+    body: rows,
+    styles: { fontSize: 10 },
+    columnStyles: { 0: { fontStyle: "bold", cellWidth: 50 } },
+  });
+
+  doc.save(`receipt-${transaction.reference}.pdf`);
+}
