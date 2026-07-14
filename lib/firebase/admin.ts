@@ -1,30 +1,30 @@
 import "server-only";
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import type { Auth } from "firebase-admin/auth";
 
 import { readFirebaseAdminEnv } from "@/lib/firebase/env";
 
-interface FirebaseAdmin {
+interface FirebaseAdminCore {
   app: App;
-  auth: Auth;
   db: Firestore;
 }
 
-let admin: FirebaseAdmin | null = null;
+let core: FirebaseAdminCore | null = null;
 let cachedError: string | null = null;
+let auth: Auth | null = null;
 
 /**
- * Lazily creates the Firebase Admin SDK singleton on first call. Nothing
- * here runs at module scope: importing this file cannot throw during
+ * Lazily creates the Firebase Admin app + Firestore singleton on first call.
+ * Nothing here runs at module scope: importing this file cannot throw during
  * prerendering. A missing or malformed service-account credential (the
  * single biggest cause of "works locally, breaks on Vercel") only surfaces
  * when a server action actually tries to use it, as a normal thrown error
  * with the real underlying reason - never as an unhandled crash during a
  * build or an SSR render pass.
  */
-function getAdmin(): FirebaseAdmin {
-  if (admin) return admin;
+function getCore(): FirebaseAdminCore {
+  if (core) return core;
   if (cachedError) throw new Error(cachedError);
 
   const result = readFirebaseAdminEnv();
@@ -35,8 +35,8 @@ function getAdmin(): FirebaseAdmin {
 
   try {
     const app = getApps()[0] ?? initializeApp({ credential: cert(result.env) });
-    admin = { app, auth: getAuth(app), db: getFirestore(app) };
-    return admin;
+    core = { app, db: getFirestore(app) };
+    return core;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     cachedError = message;
@@ -45,12 +45,24 @@ function getAdmin(): FirebaseAdmin {
   }
 }
 
-export function getAdminAuth(): Auth {
-  return getAdmin().auth;
+/**
+ * firebase-admin/auth transitively requires jwks-rsa, which requires the
+ * ESM-only `jose` package - a static top-level import of firebase-admin/auth
+ * previously dragged that chain into every consumer of this file at module
+ * load time, including Firestore-only code paths (like account setup) that
+ * never call this function. Importing it dynamically, only here, means that
+ * chain is only ever loaded by callers that actually need Auth.
+ */
+export async function getAdminAuth(): Promise<Auth> {
+  if (auth) return auth;
+  const { app } = getCore();
+  const { getAuth } = await import("firebase-admin/auth");
+  auth = getAuth(app);
+  return auth;
 }
 
 export function getAdminDb(): Firestore {
-  return getAdmin().db;
+  return getCore().db;
 }
 
 /** True if every required Admin SDK env var is present. Safe to call anywhere, never throws. */
@@ -66,7 +78,7 @@ export function isFirebaseAdminConfigured(): boolean {
  */
 export function getAdminInitError(): string | null {
   try {
-    getAdmin();
+    getCore();
     return null;
   } catch (err) {
     return err instanceof Error ? err.message : String(err);

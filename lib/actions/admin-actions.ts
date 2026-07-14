@@ -29,7 +29,8 @@ export async function adminCreateUser(input: {
   if (err) return err;
 
   try {
-    const userRecord = await getAdminAuth().createUser({
+    const adminAuth = await getAdminAuth();
+    const userRecord = await adminAuth.createUser({
       email: input.email,
       password: input.password,
       displayName: `${input.firstName} ${input.lastName}`,
@@ -44,7 +45,7 @@ export async function adminCreateUser(input: {
     });
 
     if (!setup.ok) {
-      await getAdminAuth().deleteUser(userRecord.uid).catch(() => null);
+      await adminAuth.deleteUser(userRecord.uid).catch(() => null);
       return { ok: false as const, error: setup.error };
     }
 
@@ -63,7 +64,8 @@ export async function adminSetUserStatus(userId: string, status: "active" | "sus
       status,
       updatedAt: new Date().toISOString(),
     });
-    await getAdminAuth().updateUser(userId, { disabled: status !== "active" });
+    const adminAuth = await getAdminAuth();
+    await adminAuth.updateUser(userId, { disabled: status !== "active" });
     return { ok: true as const };
   } catch (e) {
     return { ok: false as const, error: errorMessage(e, "Failed to update user status.") };
@@ -75,7 +77,8 @@ export async function adminDeleteUser(userId: string) {
   if (err) return err;
 
   try {
-    await getAdminAuth().deleteUser(userId).catch(() => null);
+    const adminAuth = await getAdminAuth();
+    await adminAuth.deleteUser(userId).catch(() => null);
     await getAdminDb().collection(COLLECTIONS.users).doc(userId).delete();
     return { ok: true as const };
   } catch (e) {
