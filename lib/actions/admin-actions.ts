@@ -2,8 +2,9 @@
 
 import { FieldValue } from "firebase-admin/firestore";
 
-import { getAdminAuth, getAdminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { requireAdmin, writeAuditLog } from "@/lib/actions/admin-guard";
+import { restCreateUser, restDeleteUser, restSetUserDisabled } from "@/lib/actions/identity-rest";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { initializeCustomerAccount } from "@/lib/actions/onboarding";
 import { generateAccountNumber, generateReference } from "@/lib/utils";
@@ -21,8 +22,7 @@ export async function adminCreateUser(
   if (!admin.ok) return admin;
 
   try {
-    const adminAuth = await getAdminAuth();
-    const userRecord = await adminAuth.createUser({
+    const { uid } = await restCreateUser({
       email: input.email,
       password: input.password,
       displayName: `${input.firstName} ${input.lastName}`,
@@ -30,14 +30,14 @@ export async function adminCreateUser(
     });
 
     const setup = await initializeCustomerAccount({
-      uid: userRecord.uid,
+      uid,
       email: input.email,
       firstName: input.firstName,
       lastName: input.lastName,
     });
 
     if (!setup.ok) {
-      await adminAuth.deleteUser(userRecord.uid).catch(() => null);
+      await restDeleteUser(uid).catch(() => null);
       return { ok: false as const, error: setup.error };
     }
 
@@ -45,11 +45,11 @@ export async function adminCreateUser(
       adminUid: admin.uid,
       adminEmail: admin.email,
       action: "admin.createUser",
-      targetUserId: userRecord.uid,
+      targetUserId: uid,
       after: { email: input.email, firstName: input.firstName, lastName: input.lastName },
     });
 
-    return { ok: true as const, uid: userRecord.uid };
+    return { ok: true as const, uid };
   } catch (e) {
     return { ok: false as const, error: errorMessage(e, "Failed to create user.") };
   }
@@ -68,8 +68,7 @@ export async function adminSetUserStatus(
     const before = (await userRef.get()).data();
 
     await userRef.update({ status, updatedAt: new Date().toISOString() });
-    const adminAuth = await getAdminAuth();
-    await adminAuth.updateUser(userId, { disabled: status !== "active" });
+    await restSetUserDisabled(userId, status !== "active");
 
     await writeAuditLog({
       adminUid: admin.uid,
@@ -94,8 +93,7 @@ export async function adminDeleteUser(idToken: string, userId: string) {
     const userRef = getAdminDb().collection(COLLECTIONS.users).doc(userId);
     const before = (await userRef.get()).data();
 
-    const adminAuth = await getAdminAuth();
-    await adminAuth.deleteUser(userId).catch(() => null);
+    await restDeleteUser(userId).catch(() => null);
     await userRef.delete();
 
     await writeAuditLog({
@@ -147,8 +145,7 @@ export async function adminRejectRegistration(idToken: string, userId: string) {
       .collection(COLLECTIONS.users)
       .doc(userId)
       .update({ reviewStatus: "rejected", status: "suspended", updatedAt: now });
-    const adminAuth = await getAdminAuth();
-    await adminAuth.updateUser(userId, { disabled: true });
+    await restSetUserDisabled(userId, true);
 
     await writeAuditLog({
       adminUid: admin.uid,

@@ -1,7 +1,8 @@
 import "server-only";
 import { headers } from "next/headers";
 
-import { getAdminAuth, getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
+import { getAdminDb, getAdminInitError } from "@/lib/firebase/admin";
+import { verifyIdTokenRest } from "@/lib/actions/identity-rest";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 
 export type AdminGuardResult =
@@ -15,6 +16,13 @@ export type AdminGuardResult =
  * must call this first - it is the only real authorization boundary for
  * these writes, since a client-side role check alone can't stop a forged
  * request straight to the server action.
+ *
+ * Token verification goes through the Identity Platform REST API
+ * (verifyIdTokenRest), not firebase-admin/auth's verifyIdToken - that method
+ * requires jwks-rsa, which requires the ESM-only `jose` package, which
+ * crashes at import time on a Node runtime without require(esm) support.
+ * The REST call gets the identical guarantee (Google verifies the token
+ * signature and expiry server-side) without that fragile dependency.
  */
 export async function requireAdmin(idToken: string): Promise<AdminGuardResult> {
   const adminError = getAdminInitError();
@@ -22,17 +30,27 @@ export async function requireAdmin(idToken: string): Promise<AdminGuardResult> {
 
   if (!idToken) return { ok: false, error: "Not signed in." };
 
+  let uid: string;
+  let email: string;
   try {
-    const auth = await getAdminAuth();
-    const decoded = await auth.verifyIdToken(idToken);
-    const snap = await getAdminDb().collection(COLLECTIONS.users).doc(decoded.uid).get();
+    const decoded = await verifyIdTokenRest(idToken);
+    uid = decoded.uid;
+    email = decoded.email;
+  } catch (err) {
+    console.error("[requireAdmin] token verification failed:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Invalid or expired session. Please sign in again." };
+  }
+
+  try {
+    const snap = await getAdminDb().collection(COLLECTIONS.users).doc(uid).get();
     const role = snap.data()?.role;
     if (role !== "admin") {
       return { ok: false, error: "Forbidden: admin privileges required." };
     }
-    return { ok: true, uid: decoded.uid, email: decoded.email ?? "" };
-  } catch {
-    return { ok: false, error: "Invalid or expired session. Please sign in again." };
+    return { ok: true, uid, email };
+  } catch (err) {
+    console.error("[requireAdmin] role lookup failed:", err);
+    return { ok: false, error: "Could not verify admin role. Please try again." };
   }
 }
 
