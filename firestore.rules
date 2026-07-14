@@ -23,9 +23,12 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if false; // created by initializeCustomerAccount server action
-      allow update: if isOwner(userId) &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['photoURL', 'updatedAt']);
+      // No direct client writes at all - even non-identity preference changes
+      // (currency, language, notificationPrefs) go through the
+      // updateProfileDetails server action, which enforces its own allowlist.
+      // Identity/KYC fields (name, DOB, phone, address, occupation, photo,
+      // email) can only be changed by an admin via adminUpdateProfile.
+      allow update: if false;
       allow delete: if false;
     }
 

@@ -12,6 +12,7 @@ import {
   KeyRound,
   Lock,
   Mail,
+  Pencil,
   Plus,
   Snowflake,
   Unlock,
@@ -36,6 +37,7 @@ import {
   adminSetUserStatus,
   adminAdjustBalance,
   adminTransferFunds,
+  adminUpdateProfile,
 } from "@/lib/actions/admin-actions";
 import { formatCurrency, formatDate, initials, maskCardNumber } from "@/lib/utils";
 import type { AccountType } from "@/types";
@@ -111,6 +113,15 @@ export default function AdminCustomerDetailPage() {
   const [moneyOpen, setMoneyOpen] = React.useState(false);
   const [transferOpen, setTransferOpen] = React.useState(false);
   const [issueCardOpen, setIssueCardOpen] = React.useState(false);
+  const [editProfileOpen, setEditProfileOpen] = React.useState(false);
+
+  const [editFirstName, setEditFirstName] = React.useState("");
+  const [editLastName, setEditLastName] = React.useState("");
+  const [editPhone, setEditPhone] = React.useState("");
+  const [editAddress, setEditAddress] = React.useState("");
+  const [editOccupation, setEditOccupation] = React.useState("");
+  const [editDateOfBirth, setEditDateOfBirth] = React.useState("");
+  const [editEmail, setEditEmail] = React.useState("");
 
   const [notifyTitle, setNotifyTitle] = React.useState("");
   const [notifyMessage, setNotifyMessage] = React.useState("");
@@ -149,6 +160,44 @@ export default function AdminCustomerDetailPage() {
     if (!result) return;
     if (result.ok) {
       toast.success(next === "suspended" ? "Customer suspended" : "Customer reactivated");
+      invalidateAll();
+    } else {
+      toast.error(result.error);
+    }
+  }
+
+  function openEditProfile() {
+    if (!customer) return;
+    setEditFirstName(customer.firstName);
+    setEditLastName(customer.lastName);
+    setEditPhone(customer.phone ?? "");
+    setEditAddress(customer.address ?? "");
+    setEditOccupation(customer.occupation ?? "");
+    setEditDateOfBirth(customer.dateOfBirth ?? "");
+    setEditEmail(customer.email);
+    setEditProfileOpen(true);
+  }
+
+  async function handleSaveProfile() {
+    const result = await withToken((idToken) =>
+      adminUpdateProfile(idToken, uid, {
+        firstName: editFirstName,
+        lastName: editLastName,
+        phone: editPhone,
+        address: editAddress,
+        occupation: editOccupation,
+        dateOfBirth: editDateOfBirth,
+        email: editEmail,
+      })
+    );
+    if (!result) return;
+    if (result.ok) {
+      if (result.changedFields.length === 0) {
+        toast.message("No changes to save");
+      } else {
+        toast.success(`Profile updated (${result.changedFields.join(", ")})`);
+      }
+      setEditProfileOpen(false);
       invalidateAll();
     } else {
       toast.error(result.error);
@@ -402,6 +451,9 @@ export default function AdminCustomerDetailPage() {
               </Button>
             </>
           )}
+          <Button size="sm" variant="outline" disabled={busy} onClick={openEditProfile}>
+            <Pencil className="size-3.5" /> Edit profile
+          </Button>
           <Button size="sm" variant="outline" disabled={busy} onClick={handleToggleStatus}>
             {customer.status === "active" ? "Suspend" : "Reactivate"}
           </Button>
@@ -573,6 +625,50 @@ export default function AdminCustomerDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit customer profile (admin-only identity/KYC fields) */}
+      <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit customer profile</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>First name</Label>
+              <Input value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Last name</Label>
+              <Input value={editLastName} onChange={(e) => setEditLastName(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Phone number</Label>
+              <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Date of birth</Label>
+              <Input type="date" value={editDateOfBirth} onChange={(e) => setEditDateOfBirth(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Occupation</Label>
+              <Input value={editOccupation} onChange={(e) => setEditOccupation(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Email</Label>
+              <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label>Address</Label>
+              <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveProfile} disabled={busy} variant="gradient" className="w-full">
+              Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reset PIN confirmation */}
       <AlertDialog open={resetPinOpen} onOpenChange={setResetPinOpen}>

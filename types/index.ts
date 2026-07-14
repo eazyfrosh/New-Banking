@@ -14,6 +14,7 @@ export interface UserProfile {
   kycStatus: KycStatus;
   address?: string;
   dateOfBirth?: string;
+  occupation?: string;
   currency: string;
   language: string;
   notificationPrefs: {
@@ -258,6 +259,7 @@ export interface AuditLog {
   adminEmail: string;
   action: string;
   targetUserId: string | null;
+  changedFields: string[] | null;
   before: unknown;
   after: unknown;
   ip: string | null;

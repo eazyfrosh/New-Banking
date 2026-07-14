@@ -62,6 +62,7 @@ export default function AdminAuditLogPage() {
                 <TableHead>Admin</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Customer</TableHead>
+                <TableHead>Fields changed</TableHead>
                 <TableHead>IP</TableHead>
               </TableRow>
             </TableHeader>
@@ -77,6 +78,9 @@ export default function AdminAuditLogPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground font-mono text-xs">
                     {log.targetUserId ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {log.changedFields && log.changedFields.length > 0 ? log.changedFields.join(", ") : "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">{log.ip ?? "—"}</TableCell>
                 </TableRow>

@@ -73,6 +73,7 @@ interface AuditLogInput {
   adminEmail: string;
   action: string;
   targetUserId?: string;
+  changedFields?: string[];
   before?: unknown;
   after?: unknown;
 }
@@ -88,6 +89,7 @@ export async function writeAuditLog(input: AuditLogInput) {
         adminEmail: input.adminEmail,
         action: input.action,
         targetUserId: input.targetUserId ?? null,
+        changedFields: input.changedFields ?? null,
         before: sanitize(input.before),
         after: sanitize(input.after),
         ip,

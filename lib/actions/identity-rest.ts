@@ -105,6 +105,19 @@ export async function restSetUserDisabled(uid: string, disabled: boolean): Promi
   }
 }
 
+export async function restUpdateUserEmail(uid: string, email: string): Promise<void> {
+  const token = await getAccessToken();
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${projectId()}/accounts:update`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ localId: uid, email }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message || `Failed to update email (${res.status}).`);
+  }
+}
+
 export async function restDeleteUser(uid: string): Promise<void> {
   const token = await getAccessToken();
   const res = await fetch(`https://identitytoolkit.googleapis.com/v1/projects/${projectId()}/accounts:delete`, {

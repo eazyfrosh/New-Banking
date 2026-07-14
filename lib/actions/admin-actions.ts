@@ -4,7 +4,7 @@ import { FieldValue } from "firebase-admin/firestore";
 
 import { getAdminDb } from "@/lib/firebase/admin";
 import { requireAdmin, writeAuditLog } from "@/lib/actions/admin-guard";
-import { restCreateUser, restDeleteUser, restSetUserDisabled } from "@/lib/actions/identity-rest";
+import { restCreateUser, restDeleteUser, restSetUserDisabled, restUpdateUserEmail } from "@/lib/actions/identity-rest";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { initializeCustomerAccount } from "@/lib/actions/onboarding";
 import { generateAccountNumber, generateReference } from "@/lib/utils";
@@ -107,6 +107,80 @@ export async function adminDeleteUser(idToken: string, userId: string) {
     return { ok: true as const };
   } catch (e) {
     return { ok: false as const, error: errorMessage(e, "Failed to delete user.") };
+  }
+}
+
+const EDITABLE_PROFILE_FIELDS = [
+  "firstName",
+  "lastName",
+  "phone",
+  "address",
+  "occupation",
+  "dateOfBirth",
+  "email",
+] as const;
+
+type EditableProfileField = (typeof EDITABLE_PROFILE_FIELDS)[number];
+
+/**
+ * The only path that may change a customer's identity/KYC fields - customers
+ * cannot change these themselves (see lib/actions/profile-actions.ts's
+ * runtime allowlist). Records exactly which fields changed and their old/new
+ * values in the audit log, not just a generic before/after blob.
+ */
+export async function adminUpdateProfile(
+  idToken: string,
+  userId: string,
+  updates: Partial<Record<EditableProfileField, string>>
+) {
+  const admin = await requireAdmin(idToken);
+  if (!admin.ok) return admin;
+
+  try {
+    const userRef = getAdminDb().collection(COLLECTIONS.users).doc(userId);
+    const snap = await userRef.get();
+    const before = snap.data();
+    if (!before) return { ok: false as const, error: "Customer not found." };
+
+    const changedFields: string[] = [];
+    const beforeValues: Record<string, unknown> = {};
+    const afterValues: Record<string, unknown> = {};
+    const writes: Record<string, unknown> = {};
+
+    for (const field of EDITABLE_PROFILE_FIELDS) {
+      const newValue = updates[field];
+      if (newValue === undefined) continue;
+      const oldValue = (before as Record<string, unknown>)[field] ?? "";
+      if (newValue === oldValue) continue;
+      changedFields.push(field);
+      beforeValues[field] = oldValue;
+      afterValues[field] = newValue;
+      writes[field] = newValue;
+    }
+
+    if (changedFields.length === 0) {
+      return { ok: true as const, changedFields: [] as string[] };
+    }
+
+    if (changedFields.includes("email")) {
+      await restUpdateUserEmail(userId, updates.email!);
+    }
+
+    await userRef.update({ ...writes, updatedAt: new Date().toISOString() });
+
+    await writeAuditLog({
+      adminUid: admin.uid,
+      adminEmail: admin.email,
+      action: "admin.updateProfile",
+      targetUserId: userId,
+      changedFields,
+      before: beforeValues,
+      after: afterValues,
+    });
+
+    return { ok: true as const, changedFields };
+  } catch (e) {
+    return { ok: false as const, error: errorMessage(e, "Failed to update profile.") };
   }
 }
 
