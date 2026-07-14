@@ -9,9 +9,9 @@ import {
 
 const faqs = [
   {
-    question: "Is Nexora Bank a real bank?",
+    question: "Is Novaofficial a real bank?",
     answer:
-      "Nexora is a demo digital banking platform built to showcase modern fintech UX. All balances and transactions are simulated for demonstration purposes.",
+      "Novaofficial is a demo digital banking platform built to showcase modern fintech UX. All balances and transactions are simulated for demonstration purposes.",
   },
   {
     question: "How long does it take to open an account?",
@@ -24,7 +24,7 @@ const faqs = [
       "We use Firebase Authentication and Firestore with strict security rules, encrypted transport, and role-based access control throughout the app.",
   },
   {
-    question: "Can I use Nexora on mobile?",
+    question: "Can I use Novaofficial on mobile?",
     answer:
       "Yes — the entire experience is fully responsive and optimized for phones, tablets and desktops alike.",
   },

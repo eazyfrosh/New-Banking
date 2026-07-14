@@ -82,7 +82,7 @@ export function LoginForm() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Sign in to access your Nexora account.
+          Sign in to access your Novaofficial account.
         </p>
       </div>
 

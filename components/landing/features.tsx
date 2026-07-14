@@ -20,7 +20,7 @@ const features = [
   {
     icon: ArrowLeftRight,
     title: "Instant transfers",
-    description: "Send money within Nexora, to any bank, or across borders in seconds.",
+    description: "Send money within Novaofficial, to any bank, or across borders in seconds.",
   },
   {
     icon: PiggyBank,
@@ -51,7 +51,7 @@ export function Features() {
         <SectionHeading
           eyebrow="Platform"
           title="Everything your money needs, in one place"
-          description="Nexora brings spending, saving, borrowing and investing together — designed to feel effortless."
+          description="Novaofficial brings spending, saving, borrowing and investing together — designed to feel effortless."
         />
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

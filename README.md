@@ -1,4 +1,4 @@
-# Nexora Bank — Modern Digital Banking Platform
+# Novaofficial — Modern Digital Banking Platform
 
 A full-featured, premium fintech demo built with Next.js 15, React 19, TypeScript,
 Tailwind CSS, Shadcn UI, Framer Motion, Firebase and Recharts. Fully serverless —

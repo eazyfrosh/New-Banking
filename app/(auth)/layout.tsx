@@ -35,7 +35,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="mx-auto w-full max-w-sm">{children}</div>
         </div>
         <p className="text-muted-foreground text-xs">
-          &copy; {new Date().getFullYear()} Nexora Bank. All rights reserved.{" "}
+          &copy; {new Date().getFullYear()} Novaofficial. All rights reserved.{" "}
           <Link href="/" className="underline underline-offset-4">
             Back to home
           </Link>

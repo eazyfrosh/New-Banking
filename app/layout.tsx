@@ -30,11 +30,11 @@ function resolveMetadataBase(): URL {
 export const metadata: Metadata = {
   metadataBase: resolveMetadataBase(),
   title: {
-    default: "Nexora Bank — Modern Digital Banking",
-    template: "%s · Nexora Bank",
+    default: "Novaofficial — Modern Digital Banking",
+    template: "%s · Novaofficial",
   },
   description:
-    "Nexora Bank is a premium digital banking platform for everyday spending, saving, investing and borrowing — all in one beautifully designed app.",
+    "Novaofficial is a premium digital banking platform for everyday spending, saving, investing and borrowing — all in one beautifully designed app.",
   keywords: [
     "digital bank",
     "online banking",

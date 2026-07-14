@@ -26,7 +26,7 @@ export function CardsShowcase() {
               className="absolute top-6 left-0 w-72 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-5 text-white shadow-xl"
             >
               <div className="flex items-center justify-between text-xs opacity-80">
-                <span>Nexora Debit</span>
+                <span>Novaofficial Debit</span>
                 <span>MASTERCARD</span>
               </div>
               <p className="mt-8 font-mono tracking-widest">•••• •••• •••• 7734</p>
@@ -44,7 +44,7 @@ export function CardsShowcase() {
               className="absolute top-20 left-24 w-72 rounded-2xl bg-gradient-to-br from-primary to-accent p-5 text-primary-foreground shadow-2xl"
             >
               <div className="flex items-center justify-between text-xs opacity-80">
-                <span>Nexora Platinum</span>
+                <span>Novaofficial Platinum</span>
                 <span>VISA</span>
               </div>
               <p className="mt-8 font-mono tracking-widest">•••• •••• •••• 4821</p>

@@ -94,7 +94,7 @@ export function Hero() {
 
             <div className="mt-6 rounded-2xl bg-gradient-to-br from-primary to-accent p-5 text-primary-foreground shadow-lg">
               <div className="flex items-center justify-between">
-                <span className="text-xs opacity-80">Nexora Platinum</span>
+                <span className="text-xs opacity-80">Novaofficial Platinum</span>
                 <span className="text-xs font-semibold">VISA</span>
               </div>
               <p className="mt-6 font-mono text-lg tracking-widest">

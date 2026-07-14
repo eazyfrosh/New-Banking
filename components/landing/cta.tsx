@@ -13,7 +13,7 @@ export function Cta() {
             Ready to bank better?
           </h2>
           <p className="mt-4 text-lg text-primary-foreground/80 text-balance">
-            Join millions of people who trust Nexora with their everyday finances.
+            Join millions of people who trust Novaofficial with their everyday finances.
           </p>
           <Button asChild size="lg" variant="secondary" className="mt-8">
             <Link href="/register">

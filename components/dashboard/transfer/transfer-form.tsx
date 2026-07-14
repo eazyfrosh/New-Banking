@@ -365,7 +365,7 @@ export function TransferForm() {
             hours and include a small processing fee.
           </p>
           <p className="text-muted-foreground">
-            Never share your transaction PIN with anyone, including Nexora staff.
+            Never share your transaction PIN with anyone, including Novaofficial staff.
           </p>
         </CardContent>
       </Card>

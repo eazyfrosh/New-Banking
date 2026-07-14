@@ -65,7 +65,7 @@ export function Footer() {
         </div>
 
         <div className="border-border/60 text-muted-foreground mt-12 flex flex-col gap-4 border-t pt-8 text-xs sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} Nexora Bank. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Novaofficial. All rights reserved.</p>
           <p>This is a demo application. No real funds are held or transferred.</p>
         </div>
       </div>

@@ -8,11 +8,11 @@ export interface MarketInstrument {
 }
 
 export const marketInstruments: MarketInstrument[] = [
-  { symbol: "NXR500", name: "Nexora 500 Index Fund", type: "mutual_fund", price: 128.4 },
-  { symbol: "NXRBAL", name: "Nexora Balanced Growth Fund", type: "mutual_fund", price: 64.12 },
-  { symbol: "NXTECH", name: "Nexora Technology Corp.", type: "stock", price: 342.5 },
-  { symbol: "NXENR", name: "Nexora Energy Holdings", type: "stock", price: 87.25 },
-  { symbol: "NXRETL", name: "Nexora Retail Group", type: "stock", price: 54.8 },
+  { symbol: "NXR500", name: "Novaofficial 500 Index Fund", type: "mutual_fund", price: 128.4 },
+  { symbol: "NXRBAL", name: "Novaofficial Balanced Growth Fund", type: "mutual_fund", price: 64.12 },
+  { symbol: "NXTECH", name: "Novaofficial Technology Corp.", type: "stock", price: 342.5 },
+  { symbol: "NXENR", name: "Novaofficial Energy Holdings", type: "stock", price: 87.25 },
+  { symbol: "NXRETL", name: "Novaofficial Retail Group", type: "stock", price: 54.8 },
   { symbol: "BTC", name: "Bitcoin (demo)", type: "crypto", price: 61250.0 },
   { symbol: "ETH", name: "Ethereum (demo)", type: "crypto", price: 3380.5 },
 ];

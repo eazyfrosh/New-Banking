@@ -6,5 +6,5 @@
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="16" fill="url(#g)"/>
-  <path d="M20 44V20h5.2l13.6 16.2V20H44v24h-5.2L25.2 27.8V44H20z" fill="white"/>
+  <text x="32" y="41" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="22" font-weight="700" letter-spacing="-1" fill="white">NO</text>
 </svg>

@@ -10,7 +10,7 @@ const testimonials = [
     name: "Amara Chen",
     role: "Freelance designer",
     quote:
-      "Nexora replaced three different apps for me. Transfers are instant and the savings goals actually keep me motivated.",
+      "Novaofficial replaced three different apps for me. Transfers are instant and the savings goals actually keep me motivated.",
   },
   {
     name: "Marcus Webb",

@@ -10,7 +10,7 @@ export default function TransferPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Transfer money</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Send money instantly within Nexora, to any bank, or internationally.
+          Send money instantly within Novaofficial, to any bank, or internationally.
         </p>
       </div>
       <TransferForm />

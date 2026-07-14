@@ -105,7 +105,7 @@ export function RegisterForm() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Open a free Nexora account in under two minutes.
+          Open a free Novaofficial account in under two minutes.
         </p>
       </div>
 

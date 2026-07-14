@@ -20,7 +20,7 @@ export function CardVisual({
       <div className="bg-mesh absolute inset-0 opacity-30" />
       <div className="relative flex items-center justify-between text-xs">
         <span className="font-medium opacity-90">
-          Nexora {card.type === "virtual" ? "Virtual" : "Physical"}
+          Novaofficial {card.type === "virtual" ? "Virtual" : "Physical"}
         </span>
         <span className="font-semibold tracking-wide uppercase">{card.network}</span>
       </div>

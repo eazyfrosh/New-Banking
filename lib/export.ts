@@ -37,7 +37,7 @@ export function exportTransactionsToPdf(transactions: Transaction[]) {
   const doc = new jsPDF();
 
   doc.setFontSize(16);
-  doc.text("Nexora Bank — Transaction Statement", 14, 18);
+  doc.text("Novaofficial — Transaction Statement", 14, 18);
   doc.setFontSize(10);
   doc.setTextColor(120);
   doc.text(`Generated ${formatDate(new Date())}`, 14, 24);

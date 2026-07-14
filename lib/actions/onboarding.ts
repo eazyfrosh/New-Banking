@@ -196,7 +196,7 @@ export async function initializeCustomerAccount(input: InitInput) {
       batch.set(notifRef, {
         userId: input.uid,
         type: "system",
-        title: "Welcome to Nexora Bank",
+        title: "Welcome to Novaofficial",
         message: "Your account has been created successfully. Explore your dashboard to get started.",
         read: false,
         archived: false,

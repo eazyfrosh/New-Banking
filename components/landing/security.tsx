@@ -37,7 +37,7 @@ export function Security() {
             Your money, protected at every layer
           </h2>
           <p className="text-muted-foreground mt-4 text-lg text-balance">
-            Nexora is built on the same security standards used by leading
+            Novaofficial is built on the same security standards used by leading
             financial institutions — so you can bank with confidence.
           </p>
 
