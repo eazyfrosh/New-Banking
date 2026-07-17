@@ -7,6 +7,7 @@ import {
   LineChart,
   type LucideIcon,
   Receipt,
+  Repeat,
   Smartphone,
   Wallet,
   Wifi,
@@ -28,6 +29,7 @@ export const transactionIcons: Record<TransactionType, LucideIcon> = {
   investment: LineChart,
   card_payment: Wallet,
   interest: Banknote,
+  currency_conversion: Repeat,
 };
 
 export const transactionLabels: Record<TransactionType, string> = {
@@ -44,6 +46,7 @@ export const transactionLabels: Record<TransactionType, string> = {
   investment: "Investment",
   card_payment: "Card payment",
   interest: "Interest earned",
+  currency_conversion: "Currency conversion",
 };
 
 export const statusColors: Record<

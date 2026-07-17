@@ -62,7 +62,8 @@ export type TransactionType =
   | "loan_repayment"
   | "investment"
   | "card_payment"
-  | "interest";
+  | "interest"
+  | "currency_conversion";
 
 export type TransactionStatus =
   | "pending"

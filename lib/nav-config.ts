@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   BadgeDollarSign,
   Bell,
+  Coins,
   CreditCard,
   Gauge,
   LayoutDashboard,
@@ -27,6 +28,7 @@ export interface NavItem {
 export const customerNav: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/transfer", label: "Transfer", icon: ArrowLeftRight },
+  { href: "/dashboard/currency", label: "Currency", icon: Coins },
   { href: "/dashboard/transactions", label: "Transactions", icon: Receipt },
   { href: "/dashboard/cards", label: "Cards", icon: CreditCard },
   { href: "/dashboard/savings", label: "Savings", icon: PiggyBank },

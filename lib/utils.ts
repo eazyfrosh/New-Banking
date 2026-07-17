@@ -1,16 +1,23 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import { currencyDecimals, getCurrencyInfo } from "@/lib/currencies";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Symbol comes from our own currency table (not Intl's locale data) so every
+ * supported currency renders a correct, consistent symbol regardless of the
+ * runtime's ICU data. */
 export function formatCurrency(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
+  const decimals = currencyDecimals(currency);
+  const sign = amount < 0 ? "-" : "";
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(Math.abs(amount));
+  return `${sign}${getCurrencyInfo(currency).symbol}${formatted}`;
 }
 
 export function formatDate(date: Date | string | number, opts?: Intl.DateTimeFormatOptions) {

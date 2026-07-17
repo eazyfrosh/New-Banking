@@ -9,8 +9,9 @@ import { useAccounts } from "@/hooks/use-accounts";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useLoans } from "@/hooks/use-loans";
 import { useInvestments } from "@/hooks/use-investments";
+import { useExchangeRates } from "@/hooks/use-exchange-rates";
 import { investmentValue, investmentPnL } from "@/lib/services/investments";
-import { exchangeRates } from "@/lib/exchange-rates";
+import { CURRENCIES, DEFAULT_CURRENCY, getCurrencyInfo } from "@/lib/currencies";
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/types";
 
@@ -32,7 +33,22 @@ export default function DashboardPage() {
   const { data: investments } = useInvestments(profile?.uid);
   const [selectedTx, setSelectedTx] = React.useState<Transaction | null>(null);
 
-  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+  const displayCurrency = profile?.currency || DEFAULT_CURRENCY;
+  const { data: rates } = useExchangeRates(displayCurrency);
+
+  // Accounts can hold different currencies, so a raw sum would be
+  // meaningless - convert every account's balance into the user's display
+  // currency using the live rate before summing.
+  const totalBalance = React.useMemo(() => {
+    if (!rates) return accounts.filter((a) => a.currency === displayCurrency).reduce((sum, a) => sum + a.balance, 0);
+    return accounts.reduce((sum, acc) => {
+      if (acc.currency === rates.base) return sum + acc.balance;
+      const rate = rates.rates[acc.currency];
+      if (!rate) return sum;
+      return sum + acc.balance / rate;
+    }, 0);
+  }, [accounts, rates, displayCurrency]);
+
   const activeLoan = loans.find((loan) => loan.status === "active");
   const portfolioValue = investments.reduce((sum, inv) => sum + investmentValue(inv), 0);
   const portfolioPnL = investments.reduce((sum, inv) => sum + investmentPnL(inv).amount, 0);
@@ -51,9 +67,9 @@ export default function DashboardPage() {
         <Card className="border-primary/20 bg-primary/5 py-3">
           <CardContent className="flex items-center gap-3 px-4">
             <div>
-              <p className="text-muted-foreground text-xs">Total balance</p>
+              <p className="text-muted-foreground text-xs">Total balance ({displayCurrency})</p>
               <p className="text-xl font-semibold">
-                <AnimatedCounter value={totalBalance} prefix="$" decimals={2} />
+                <AnimatedCounter value={totalBalance} prefix={getCurrencyInfo(displayCurrency).symbol} decimals={2} />
               </p>
             </div>
           </CardContent>
@@ -153,22 +169,30 @@ export default function DashboardPage() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between">
               <CardTitle>Exchange rates</CardTitle>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/dashboard/currency">
+                  Convert <ArrowRight className="size-3.5" />
+                </Link>
+              </Button>
             </CardHeader>
             <CardContent className="space-y-2">
-              {exchangeRates.slice(0, 4).map((rate) => (
-                <div key={rate.currency} className="flex items-center justify-between text-sm">
-                  <span className="font-medium">USD/{rate.currency}</span>
-                  <div className="flex items-center gap-2">
-                    <span>{rate.rate.toFixed(2)}</span>
-                    <span className={rate.change >= 0 ? "text-success text-xs" : "text-destructive text-xs"}>
-                      {rate.change >= 0 ? "+" : ""}
-                      {rate.change}%
-                    </span>
-                  </div>
-                </div>
-              ))}
+              {!rates
+                ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-5 w-full" />)
+                : CURRENCIES.filter((c) => c.code !== rates.base)
+                    .slice(0, 4)
+                    .map((c) => {
+                      const rate = rates.rates[c.code];
+                      return (
+                        <div key={c.code} className="flex items-center justify-between text-sm">
+                          <span className="font-medium">
+                            {c.flag} {rates.base}/{c.code}
+                          </span>
+                          <span>{rate ? rate.toFixed(2) : "—"}</span>
+                        </div>
+                      );
+                    })}
             </CardContent>
           </Card>
         </div>

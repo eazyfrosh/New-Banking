@@ -165,7 +165,7 @@ export function TransferForm() {
                         <SelectContent>
                           {accounts.map((account) => (
                             <SelectItem key={account.id} value={account.id}>
-                              {account.name} &middot; {formatCurrency(account.balance)}
+                              {account.name} &middot; {formatCurrency(account.balance, account.currency)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -278,7 +278,7 @@ export function TransferForm() {
               <div className="divide-border/60 divide-y text-sm">
                 {[
                   ["From", selectedAccount?.name ?? ""],
-                  ["Amount", formatCurrency(Number(values.amount))],
+                  ["Amount", formatCurrency(Number(values.amount), selectedAccount?.currency)],
                   ["Recipient", values.recipientName],
                   ["Account", values.recipientAccount],
                   ...(values.recipientBank ? [["Bank", values.recipientBank]] : []),
@@ -327,7 +327,7 @@ export function TransferForm() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Amount</span>
-                    <span className="font-medium">{formatCurrency(Number(values.amount))}</span>
+                    <span className="font-medium">{formatCurrency(Number(values.amount), selectedAccount?.currency)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Recipient</span>
@@ -376,7 +376,7 @@ export function TransferForm() {
             <DialogTitle>Confirm transaction PIN</DialogTitle>
             <DialogDescription>
               Enter your 4-digit PIN to authorize this transfer of{" "}
-              {formatCurrency(Number(values.amount))}.
+              {formatCurrency(Number(values.amount), selectedAccount?.currency)}.
             </DialogDescription>
           </DialogHeader>
           <Form {...pinForm}>
