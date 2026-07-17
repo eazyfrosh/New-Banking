@@ -129,7 +129,7 @@ export default function CurrencyPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {accounts.map((account) => (
-              <AccountCard key={account.id} account={account} />
+              <AccountCard key={account.id} account={account} displayCurrency={displayCurrency} rates={rates} />
             ))}
           </div>
         )}

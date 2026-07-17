@@ -2,8 +2,9 @@ import { CreditCard, PiggyBank, Vault } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { AnimatedCounter } from "@/components/shared/animated-counter";
+import type { RatesResult } from "@/lib/actions/currency-actions";
 import { currencyDecimals, getCurrencyInfo } from "@/lib/currencies";
-import { maskAccountNumber } from "@/lib/utils";
+import { formatCurrency, maskAccountNumber } from "@/lib/utils";
 import type { Account } from "@/types";
 
 const iconByType = {
@@ -12,9 +13,33 @@ const iconByType = {
   fixed_deposit: Vault,
 } as const;
 
-export function AccountCard({ account }: { account: Account }) {
+export function AccountCard({
+  account,
+  displayCurrency,
+  rates,
+}: {
+  account: Account;
+  /** The user's preferred display currency (Profile > Preferences). When it
+   * differs from the account's own currency, a converted equivalent is
+   * shown alongside the real balance - the stored balance itself never
+   * changes, only what's shown next to it. */
+  displayCurrency?: string;
+  rates?: RatesResult;
+}) {
   const Icon = iconByType[account.type];
   const currency = getCurrencyInfo(account.currency);
+
+  const showConverted = !!displayCurrency && !!rates && displayCurrency !== account.currency;
+  let convertedAmount: number | null = null;
+  if (showConverted && rates) {
+    if (rates.base === account.currency) {
+      const rate = rates.rates[displayCurrency!];
+      if (rate) convertedAmount = account.balance * rate;
+    } else if (rates.base === displayCurrency) {
+      const rate = rates.rates[account.currency];
+      if (rate) convertedAmount = account.balance / rate;
+    }
+  }
 
   return (
     <Card className="relative overflow-hidden">
@@ -44,6 +69,11 @@ export function AccountCard({ account }: { account: Account }) {
               decimals={currencyDecimals(account.currency)}
             />
           </p>
+          {convertedAmount !== null && (
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              &asymp; {formatCurrency(convertedAmount, displayCurrency)}
+            </p>
+          )}
         </div>
         <div className="text-muted-foreground flex items-center justify-between text-xs">
           <span>{maskAccountNumber(account.accountNumber)}</span>

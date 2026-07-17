@@ -81,7 +81,9 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {accountsLoading
           ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40" />)
-          : accounts.map((account) => <AccountCard key={account.id} account={account} />)}
+          : accounts.map((account) => (
+              <AccountCard key={account.id} account={account} displayCurrency={displayCurrency} rates={rates} />
+            ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
