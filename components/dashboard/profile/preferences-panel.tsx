@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { updateProfileDetails } from "@/lib/actions/profile-actions";
+import { CURRENCIES } from "@/lib/currencies";
 import type { UserProfile } from "@/types";
 
 import { Button } from "@/components/ui/button";
@@ -24,8 +25,6 @@ const languages = [
   { value: "fr", label: "Français" },
   { value: "pt", label: "Português" },
 ];
-
-const currencies = ["USD", "EUR", "GBP", "NGN", "CAD"];
 
 export function PreferencesPanel({ profile }: { profile: UserProfile }) {
   const [language, setLanguage] = React.useState(profile.language);
@@ -70,19 +69,23 @@ export function PreferencesPanel({ profile }: { profile: UserProfile }) {
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Currency</Label>
+            <Label>Display currency</Label>
             <Select value={currency} onValueChange={setCurrency}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {currencies.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
+                {CURRENCIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.flag} {c.code} &middot; {c.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-muted-foreground text-xs">
+              Used to total your balance across currencies on the dashboard. To hold and spend a
+              balance directly in another currency, open a dedicated account from the Currency page.
+            </p>
           </div>
         </div>
 

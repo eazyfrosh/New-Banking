@@ -169,7 +169,7 @@ export function UserRowActions({ user }: { user: UserProfile }) {
                 <SelectContent>
                   {accounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.name} &middot; {formatCurrency(a.balance)}
+                      {a.name} &middot; {formatCurrency(a.balance, a.currency)}
                     </SelectItem>
                   ))}
                 </SelectContent>

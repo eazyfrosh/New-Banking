@@ -130,7 +130,7 @@ export function PayBillForm({ userId, accounts }: { userId: string; accounts: Ac
               <SelectContent>
                 {accounts.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
-                    {account.name} &middot; {formatCurrency(account.balance)}
+                    {account.name} &middot; {formatCurrency(account.balance, account.currency)}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -29,6 +29,7 @@ import {
   useFraudAlerts,
   useSupportTickets,
 } from "@/hooks/use-admin-data";
+import { useExchangeRates } from "@/hooks/use-exchange-rates";
 import { monthlyRevenue } from "@/lib/services/analytics";
 import { formatCurrency, formatDate, initials } from "@/lib/utils";
 
@@ -47,6 +48,7 @@ export default function AdminOverviewPage() {
   const { data: loans } = useAllLoans();
   const { data: tickets } = useSupportTickets();
   const { data: alerts } = useFraudAlerts();
+  const { data: rates } = useExchangeRates("USD");
 
   const customers = users?.filter((u) => u.role === "customer") ?? [];
   const totalCustomers = customers.length;
@@ -58,7 +60,14 @@ export default function AdminOverviewPage() {
   const totalDeposits = transactions?.filter((t) => t.type === "deposit").reduce((s, t) => s + t.amount, 0) ?? 0;
   const totalWithdrawals =
     transactions?.filter((t) => t.type === "withdrawal").reduce((s, t) => s + t.amount, 0) ?? 0;
-  const totalBalances = accounts?.reduce((s, a) => s + a.balance, 0) ?? 0;
+  // Accounts span multiple currencies platform-wide, so a raw sum would be
+  // meaningless - convert each into USD using the live rate before summing.
+  const totalBalances =
+    accounts?.reduce((s, a) => {
+      if (!rates || a.currency === rates.base) return s + a.balance;
+      const rate = rates.rates[a.currency];
+      return rate ? s + a.balance / rate : s;
+    }, 0) ?? 0;
   const totalRevenue = transactions?.reduce((s, t) => s + (t.fee ?? t.amount * 0.015), 0) ?? 0;
   const activeLoans = loans?.filter((l) => l.status === "active").length ?? 0;
   const outstandingLoans = loans?.reduce((s, l) => s + l.outstandingBalance, 0) ?? 0;
