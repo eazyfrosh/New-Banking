@@ -69,6 +69,7 @@ export type TransactionStatus =
   | "pending"
   | "completed"
   | "failed"
+  | "cancelled"
   | "scheduled"
   | "reversed";
 
@@ -87,6 +88,10 @@ export interface Transaction {
   counterpartyAccount?: string;
   /** Not currently written by any flow - present only for forward-compatibility with the receipt UI, which reads it if it's ever set. */
   recipientBank?: string;
+  /** Admin-editable display label, independent of the real owning `userId` -
+   * editing it corrects a record's display name, it never reassigns
+   * ownership of the transaction or its account. */
+  customerName?: string;
   category?: string;
   recurring?: boolean;
   recurringInterval?: "daily" | "weekly" | "monthly";
@@ -262,9 +267,13 @@ export interface AuditLog {
   adminEmail: string;
   action: string;
   targetUserId: string | null;
+  /** Secondary target id for actions on a non-user record, e.g. a transaction id. */
+  targetId?: string | null;
   changedFields: string[] | null;
   before: unknown;
   after: unknown;
+  /** True once this entry has been reverted via "Undo last edit" - prevents undoing the same entry twice. */
+  undone?: boolean;
   ip: string | null;
   createdAt: string;
 }

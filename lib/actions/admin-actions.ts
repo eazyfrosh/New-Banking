@@ -7,8 +7,9 @@ import { requireAdmin, writeAuditLog } from "@/lib/actions/admin-guard";
 import { restCreateUser, restDeleteUser, restSetUserDisabled, restUpdateUserEmail } from "@/lib/actions/identity-rest";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { initializeCustomerAccount } from "@/lib/actions/onboarding";
+import { CURRENCIES } from "@/lib/currencies";
 import { generateAccountNumber, generateReference } from "@/lib/utils";
-import type { AccountStatus, AccountType, CardStatus } from "@/types";
+import type { AccountStatus, AccountType, CardStatus, TransactionStatus } from "@/types";
 
 function errorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback;
@@ -722,5 +723,175 @@ export async function adminReplaceCard(idToken: string, cardId: string) {
     return { ok: true as const };
   } catch (e) {
     return { ok: false as const, error: errorMessage(e, "Failed to replace card.") };
+  }
+}
+
+const EDITABLE_TRANSACTION_FIELDS = [
+  "customerName",
+  "createdAt",
+  "description",
+  "amount",
+  "currency",
+  "status",
+  "category",
+  "reference",
+] as const;
+
+type EditableTransactionField = (typeof EDITABLE_TRANSACTION_FIELDS)[number];
+
+export type TransactionEdit = Partial<{
+  customerName: string;
+  createdAt: string;
+  description: string;
+  amount: number;
+  currency: string;
+  status: TransactionStatus;
+  category: string;
+  reference: string;
+}>;
+
+/** The four statuses the edit UI exposes - the type also allows "scheduled"/"reversed", set only by other flows (transfer review, reversal). */
+const EDITABLE_STATUSES: TransactionStatus[] = ["pending", "completed", "failed", "cancelled"];
+const CURRENCY_CODES = new Set(CURRENCIES.map((c) => c.code));
+
+function validateTransactionEdit(updates: TransactionEdit): string | null {
+  if (updates.amount !== undefined && (!Number.isFinite(updates.amount) || updates.amount <= 0)) {
+    return "Amount must be a positive number.";
+  }
+  if (updates.currency !== undefined && !CURRENCY_CODES.has(updates.currency)) {
+    return "Unsupported currency code.";
+  }
+  if (updates.status !== undefined && !EDITABLE_STATUSES.includes(updates.status)) {
+    return "Status must be one of: pending, completed, failed, cancelled.";
+  }
+  if (updates.createdAt !== undefined && Number.isNaN(new Date(updates.createdAt).getTime())) {
+    return "Invalid transaction date/time.";
+  }
+  if (updates.reference !== undefined && updates.reference.trim().length === 0) {
+    return "Reference number cannot be empty.";
+  }
+  if (updates.description !== undefined && updates.description.trim().length === 0) {
+    return "Description cannot be empty.";
+  }
+  if (updates.customerName !== undefined && updates.customerName.trim().length === 0) {
+    return "Customer name cannot be empty.";
+  }
+  return null;
+}
+
+/**
+ * Corrects a transaction record's own fields (a data-entry fix), diffing and
+ * audit-logging only what actually changed - mirrors adminUpdateProfile's
+ * pattern. This never touches account balances or reassigns the owning
+ * userId/accountId: editing amount/currency/status here fixes what the
+ * record *says*, it does not re-run money movement. `customerName` is a
+ * display label independent of the real owner, for the same reason.
+ */
+export async function adminEditTransaction(idToken: string, transactionId: string, updates: TransactionEdit) {
+  const admin = await requireAdmin(idToken);
+  if (!admin.ok) return admin;
+
+  const validationError = validateTransactionEdit(updates);
+  if (validationError) return { ok: false as const, error: validationError };
+
+  try {
+    const txRef = getAdminDb().collection(COLLECTIONS.transactions).doc(transactionId);
+    const snap = await txRef.get();
+    const before = snap.data();
+    if (!before) return { ok: false as const, error: "Transaction not found." };
+
+    const changedFields: string[] = [];
+    const beforeValues: Record<string, unknown> = {};
+    const afterValues: Record<string, unknown> = {};
+    const writes: Record<string, unknown> = {};
+
+    for (const field of EDITABLE_TRANSACTION_FIELDS) {
+      const newValue = updates[field as EditableTransactionField];
+      if (newValue === undefined) continue;
+      const oldValue = (before as Record<string, unknown>)[field] ?? null;
+      if (newValue === oldValue) continue;
+      changedFields.push(field);
+      beforeValues[field] = oldValue;
+      afterValues[field] = newValue;
+      writes[field] = newValue;
+    }
+
+    if (changedFields.length === 0) {
+      return { ok: true as const, changedFields: [] as string[] };
+    }
+
+    await txRef.update(writes);
+
+    await writeAuditLog({
+      adminUid: admin.uid,
+      adminEmail: admin.email,
+      action: "admin.editTransaction",
+      targetUserId: before.userId,
+      targetId: transactionId,
+      changedFields,
+      before: beforeValues,
+      after: afterValues,
+    });
+
+    return { ok: true as const, changedFields };
+  } catch (e) {
+    return { ok: false as const, error: errorMessage(e, "Failed to update transaction.") };
+  }
+}
+
+/**
+ * Reverts the single most recent not-yet-undone admin.editTransaction entry
+ * by writing its recorded `before` values back onto the transaction, then
+ * marks that entry undone (so it can't be undone twice) and logs the revert
+ * itself as a new audit entry for full traceability. Scans a bounded page of
+ * recent logs ordered by createdAt (single-field, no composite index) rather
+ * than filtering by action server-side, since auditLogs has no
+ * action+createdAt composite index deployed.
+ */
+export async function adminUndoLastTransactionEdit(idToken: string) {
+  const admin = await requireAdmin(idToken);
+  if (!admin.ok) return admin;
+
+  try {
+    const db = getAdminDb();
+    const recent = await db.collection(COLLECTIONS.auditLogs).orderBy("createdAt", "desc").limit(50).get();
+
+    const target = recent.docs.find(
+      (d) => d.data().action === "admin.editTransaction" && d.data().undone !== true
+    );
+    if (!target) {
+      return { ok: false as const, error: "No transaction edit to undo." };
+    }
+
+    const entry = target.data();
+    const transactionId = entry.targetId as string | undefined;
+    if (!transactionId) {
+      return { ok: false as const, error: "That edit has no recorded transaction to restore." };
+    }
+
+    const txRef = db.collection(COLLECTIONS.transactions).doc(transactionId);
+    const txSnap = await txRef.get();
+    if (!txSnap.exists) {
+      return { ok: false as const, error: "The edited transaction no longer exists." };
+    }
+
+    const restoreValues = (entry.before ?? {}) as Record<string, unknown>;
+    await txRef.update(restoreValues);
+    await target.ref.update({ undone: true });
+
+    await writeAuditLog({
+      adminUid: admin.uid,
+      adminEmail: admin.email,
+      action: "admin.undoEditTransaction",
+      targetUserId: entry.targetUserId ?? undefined,
+      targetId: transactionId,
+      changedFields: entry.changedFields ?? [],
+      before: entry.after,
+      after: entry.before,
+    });
+
+    return { ok: true as const, transactionId };
+  } catch (e) {
+    return { ok: false as const, error: errorMessage(e, "Failed to undo the last edit.") };
   }
 }

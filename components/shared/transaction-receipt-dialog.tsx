@@ -115,31 +115,39 @@ function DetailRow({ label, value }: { label: string; value?: React.ReactNode })
   );
 }
 
-const statusIcon = {
+const statusIcon: Record<Transaction["status"], typeof CheckCircle2> = {
   completed: CheckCircle2,
   failed: XCircle,
+  cancelled: XCircle,
   pending: Circle,
   scheduled: Circle,
   reversed: CheckCircle2,
-} as const;
+};
+
+const FAILED_STATUSES = new Set<Transaction["status"]>(["failed", "cancelled"]);
+const TERMINAL_STATUSES = new Set<Transaction["status"]>(["completed", "failed", "cancelled", "reversed"]);
 
 function StatusTimeline({ status }: { status: Transaction["status"] }) {
-  const isTerminal = status === "completed" || status === "failed" || status === "reversed";
+  const isTerminal = TERMINAL_STATUSES.has(status);
+  const finalLabel =
+    status === "failed"
+      ? "Failed"
+      : status === "cancelled"
+        ? "Cancelled"
+        : status === "reversed"
+          ? "Reversed"
+          : "Completed";
   const steps = [
     { key: "created", label: "Created", done: true },
     { key: "processing", label: "Processing", done: true },
-    {
-      key: "final",
-      label: status === "failed" ? "Failed" : status === "reversed" ? "Reversed" : "Completed",
-      done: isTerminal,
-    },
+    { key: "final", label: finalLabel, done: isTerminal },
   ];
 
   return (
     <div className="flex items-center">
       {steps.map((step, i) => {
         const Icon = step.key === "final" ? statusIcon[status] : step.done ? CheckCircle2 : Circle;
-        const isFailed = step.key === "final" && status === "failed";
+        const isFailed = step.key === "final" && FAILED_STATUSES.has(status);
         return (
           <React.Fragment key={step.key}>
             <div className="flex flex-col items-center gap-1.5">

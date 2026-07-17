@@ -17,7 +17,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function TransactionRowActions({ transaction }: { transaction: Transaction }) {
+export function TransactionRowActions({
+  transaction,
+  onEdit,
+}: {
+  transaction: Transaction;
+  onEdit?: (transaction: Transaction) => void;
+}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [busy, setBusy] = React.useState(false);
@@ -74,6 +80,9 @@ export function TransactionRowActions({ transaction }: { transaction: Transactio
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {onEdit && (
+          <DropdownMenuItem onSelect={() => onEdit(transaction)}>Edit transaction</DropdownMenuItem>
+        )}
         {isPendingTransfer && (
           <>
             <DropdownMenuItem onSelect={() => review(true)}>Approve transfer</DropdownMenuItem>

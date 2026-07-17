@@ -56,6 +56,7 @@ export const statusColors: Record<
   pending: "warning",
   completed: "success",
   failed: "destructive",
+  cancelled: "secondary",
   scheduled: "outline",
   reversed: "secondary",
 };

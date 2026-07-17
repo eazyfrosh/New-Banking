@@ -73,6 +73,8 @@ interface AuditLogInput {
   adminEmail: string;
   action: string;
   targetUserId?: string;
+  /** Secondary target id for actions on a non-user record, e.g. a transaction id. */
+  targetId?: string;
   changedFields?: string[];
   before?: unknown;
   after?: unknown;
@@ -89,9 +91,11 @@ export async function writeAuditLog(input: AuditLogInput) {
         adminEmail: input.adminEmail,
         action: input.action,
         targetUserId: input.targetUserId ?? null,
+        targetId: input.targetId ?? null,
         changedFields: input.changedFields ?? null,
         before: sanitize(input.before),
         after: sanitize(input.after),
+        undone: false,
         ip,
         createdAt: new Date().toISOString(),
       });

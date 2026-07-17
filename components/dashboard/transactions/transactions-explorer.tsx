@@ -37,6 +37,7 @@ const statusFilters: (TransactionStatus | "all")[] = [
   "completed",
   "pending",
   "failed",
+  "cancelled",
   "scheduled",
   "reversed",
 ];
