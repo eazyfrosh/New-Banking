@@ -41,6 +41,10 @@ function firebaseAuthErrorMessage(code: string) {
   }
 }
 
+function firebaseErrorCode(error: unknown): string {
+  return error instanceof Error && "code" in error ? String((error as { code: string }).code) : "";
+}
+
 export function RegisterForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = React.useState(false);
@@ -87,14 +91,29 @@ export function RegisterForm() {
         return;
       }
 
-      await sendEmailVerification(credential.user);
+      // The account is already fully created and set up at this point - a
+      // failure sending the verification email (rate limiting, a transient
+      // Google-side hiccup, etc.) must not be reported as a failed signup,
+      // since the user already has a real account. It's handled separately
+      // so it can never end up in the outer catch below.
+      try {
+        await sendEmailVerification(credential.user);
+        toast.success("Account created! Please verify your email.");
+      } catch (verificationError) {
+        console.error("sendEmailVerification failed after successful signup:", verificationError);
+        const code = firebaseErrorCode(verificationError);
+        toast.success("Account created!");
+        toast.error(
+          code === "auth/too-many-requests"
+            ? "Too many requests - wait a few minutes, then resend the verification email from the next screen."
+            : "Couldn't send the verification email right now - you can resend it from the next screen."
+        );
+      }
 
-      toast.success("Account created! Please verify your email.");
       router.push("/verify-email");
     } catch (error) {
       console.error("Registration failed:", error);
-      const code = error instanceof Error && "code" in error ? String((error as { code: string }).code) : "";
-      toast.error(firebaseAuthErrorMessage(code));
+      toast.error(firebaseAuthErrorMessage(firebaseErrorCode(error)));
     } finally {
       setSubmitting(false);
     }

@@ -29,8 +29,14 @@ export function VerifyEmailPanel() {
     try {
       await sendEmailVerification(auth.currentUser);
       toast.success("Verification email sent.");
-    } catch {
-      toast.error("Could not send email right now. Try again shortly.");
+    } catch (error) {
+      console.error("sendEmailVerification (resend) failed:", error);
+      const code = error instanceof Error && "code" in error ? String((error as { code: string }).code) : "";
+      toast.error(
+        code === "auth/too-many-requests"
+          ? "Too many requests - please wait a few minutes before trying again."
+          : "Could not send email right now. Try again shortly."
+      );
     } finally {
       setSending(false);
     }
