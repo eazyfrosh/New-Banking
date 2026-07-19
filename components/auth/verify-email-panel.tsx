@@ -6,9 +6,47 @@ import { sendEmailVerification } from "firebase/auth";
 import { MailCheck, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 
-import { getFirebaseAuth } from "@/lib/firebase/client";
+import { getFirebaseAuth, isFirebaseClientConfigured } from "@/lib/firebase/client";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
+
+/** Every field Firebase Auth errors can carry - logged in full so a vague
+ * production failure is never reduced to a single generic toast again. */
+function logFirebaseError(context: string, error: unknown) {
+  if (error && typeof error === "object") {
+    const err = error as { code?: string; message?: string; name?: string; customData?: unknown };
+    console.error(`[VerifyEmailPanel] ${context}:`, {
+      code: err.code,
+      message: err.message,
+      name: err.name,
+      customData: err.customData,
+      raw: error,
+    });
+  } else {
+    console.error(`[VerifyEmailPanel] ${context}:`, error);
+  }
+}
+
+function errorCode(error: unknown): string {
+  return error && typeof error === "object" && "code" in error ? String((error as { code: string }).code) : "";
+}
+
+function resendErrorMessage(code: string): string {
+  switch (code) {
+    case "auth/too-many-requests":
+      return "Too many requests - please wait a few minutes before trying again.";
+    case "auth/user-token-expired":
+    case "auth/invalid-user-token":
+    case "auth/user-disabled":
+      return "Your session has expired. Please sign in again.";
+    case "auth/network-request-failed":
+      return "Network error reaching Firebase. Check your connection and try again.";
+    case "auth/internal-error":
+      return "Firebase couldn't send the email right now (this usually clears up on its own - try again shortly).";
+    default:
+      return code ? `Could not send email right now (${code}).` : "Could not send email right now. Try again shortly.";
+  }
+}
 
 export function VerifyEmailPanel() {
   const router = useRouter();
@@ -23,20 +61,40 @@ export function VerifyEmailPanel() {
   }, [loading, user, router]);
 
   async function resend() {
-    const auth = getFirebaseAuth();
-    if (!auth.currentUser) return;
+    // 1. Env vars present at all, before touching the SDK.
+    if (!isFirebaseClientConfigured()) {
+      console.error("[VerifyEmailPanel] resend aborted: Firebase client env vars are missing in this environment.");
+      toast.error("Email service is not configured on this deployment. Contact support.");
+      return;
+    }
+
     setSending(true);
     try {
+      // 2. getFirebaseAuth() itself can throw (invalid config) - keep it
+      // inside the try/catch so that surfaces through the same logging
+      // and toast path instead of an unhandled rejection.
+      const auth = getFirebaseAuth();
+
+      // 3. Confirm this is really the auth instance for this project, and
+      // log it so a mismatched/duplicate Firebase app is visible immediately.
+      console.log("[VerifyEmailPanel] resend using Firebase project:", auth.app.options.projectId, "app:", auth.app.name);
+
+      // 4. Current user must actually be authenticated before calling
+      // sendEmailVerification - and force a token refresh so a stale/expired
+      // session fails with a clear, specific error here instead of an
+      // opaque one from sendEmailVerification itself.
+      if (!auth.currentUser) {
+        console.error("[VerifyEmailPanel] resend aborted: no authenticated user (auth.currentUser is null).");
+        toast.error("You're not signed in. Please sign in again.");
+        return;
+      }
+      await auth.currentUser.getIdToken(true);
+
       await sendEmailVerification(auth.currentUser);
       toast.success("Verification email sent.");
     } catch (error) {
-      console.error("sendEmailVerification (resend) failed:", error);
-      const code = error instanceof Error && "code" in error ? String((error as { code: string }).code) : "";
-      toast.error(
-        code === "auth/too-many-requests"
-          ? "Too many requests - please wait a few minutes before trying again."
-          : "Could not send email right now. Try again shortly."
-      );
+      logFirebaseError("sendEmailVerification (resend) failed", error);
+      toast.error(resendErrorMessage(errorCode(error)));
     } finally {
       setSending(false);
     }
