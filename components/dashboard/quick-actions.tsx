@@ -1,21 +1,14 @@
 import Link from "next/link";
-import {
-  ArrowLeftRight,
-  Receipt,
-  Smartphone,
-  Wifi,
-} from "lucide-react";
+import { ArrowLeftRight, Receipt } from "lucide-react";
 
 const actions = [
   { href: "/dashboard/transfer", label: "Transfer", icon: ArrowLeftRight },
   { href: "/dashboard/bills", label: "Pay bills", icon: Receipt },
-  { href: "/dashboard/bills?category=airtime", label: "Buy airtime", icon: Smartphone },
-  { href: "/dashboard/bills?category=data", label: "Buy data", icon: Wifi },
 ];
 
 export function QuickActions() {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3">
       {actions.map((action) => (
         <Link
           key={action.label}

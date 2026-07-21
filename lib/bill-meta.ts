@@ -4,7 +4,6 @@ import {
   GraduationCap,
   Landmark,
   ShieldCheck,
-  Smartphone,
   Wifi,
   Zap,
   type LucideIcon,
@@ -20,8 +19,6 @@ export const billCategoryIcons: Record<BillCategory, LucideIcon> = {
   education: GraduationCap,
   tax: Landmark,
   insurance: ShieldCheck,
-  airtime: Smartphone,
-  data: Wifi,
 };
 
 export const billCategoryLabels: Record<BillCategory, string> = {
@@ -32,8 +29,6 @@ export const billCategoryLabels: Record<BillCategory, string> = {
   education: "Education",
   tax: "Taxes",
   insurance: "Insurance",
-  airtime: "Airtime",
-  data: "Data",
 };
 
 export const billCategories = Object.keys(billCategoryLabels) as BillCategory[];

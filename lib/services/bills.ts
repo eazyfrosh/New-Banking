@@ -35,13 +35,4 @@ export const BILL_PROVIDERS: Record<BillCategory, BillProvider[]> = {
     { id: "ins-1", category: "insurance", name: "SecureLife Insurance" },
     { id: "ins-2", category: "insurance", name: "GuardPlus Health" },
   ],
-  airtime: [
-    { id: "air-1", category: "airtime", name: "Connectel" },
-    { id: "air-2", category: "airtime", name: "AirWave Mobile" },
-    { id: "air-3", category: "airtime", name: "Globalink" },
-  ],
-  data: [
-    { id: "dt-1", category: "data", name: "Connectel Data" },
-    { id: "dt-2", category: "data", name: "AirWave Mobile Data" },
-  ],
 };

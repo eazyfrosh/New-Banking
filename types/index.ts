@@ -54,8 +54,6 @@ export type TransactionType =
   | "transfer_bank"
   | "transfer_international"
   | "bill_payment"
-  | "airtime"
-  | "data"
   | "deposit"
   | "withdrawal"
   | "loan_disbursement"
@@ -195,9 +193,7 @@ export type BillCategory =
   | "water"
   | "education"
   | "tax"
-  | "insurance"
-  | "airtime"
-  | "data";
+  | "insurance";
 
 export interface BillProvider {
   id: string;

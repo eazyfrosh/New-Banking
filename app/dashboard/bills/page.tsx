@@ -16,7 +16,7 @@ export default function BillsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Pay bills</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Electricity, cable, internet, water, education, tax, insurance, airtime and data.
+          Electricity, cable, internet, water, education, tax and insurance.
         </p>
       </div>
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>

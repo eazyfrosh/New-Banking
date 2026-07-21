@@ -8,9 +8,7 @@ import {
   type LucideIcon,
   Receipt,
   Repeat,
-  Smartphone,
   Wallet,
-  Wifi,
 } from "lucide-react";
 
 import type { TransactionStatus, TransactionType } from "@/types";
@@ -20,8 +18,6 @@ export const transactionIcons: Record<TransactionType, LucideIcon> = {
   transfer_bank: Landmark,
   transfer_international: Landmark,
   bill_payment: Receipt,
-  airtime: Smartphone,
-  data: Wifi,
   deposit: ArrowDownLeft,
   withdrawal: ArrowUpRight,
   loan_disbursement: Banknote,
@@ -37,8 +33,6 @@ export const transactionLabels: Record<TransactionType, string> = {
   transfer_bank: "Bank transfer",
   transfer_international: "International transfer",
   bill_payment: "Bill payment",
-  airtime: "Airtime purchase",
-  data: "Data purchase",
   deposit: "Deposit",
   withdrawal: "Withdrawal",
   loan_disbursement: "Loan disbursement",

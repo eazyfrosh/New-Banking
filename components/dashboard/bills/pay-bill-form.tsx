@@ -25,7 +25,13 @@ import {
 
 export function PayBillForm({ userId, accounts }: { userId: string; accounts: Account[] }) {
   const searchParams = useSearchParams();
-  const initialCategory = (searchParams.get("category") as BillCategory) || "electricity";
+  const requestedCategory = searchParams.get("category");
+  // A stale bookmark/link could still request a category that no longer
+  // exists (e.g. a removed feature) - validate against the real list
+  // instead of trusting the query param.
+  const initialCategory = billCategories.includes(requestedCategory as BillCategory)
+    ? (requestedCategory as BillCategory)
+    : "electricity";
 
   const [category, setCategory] = React.useState<BillCategory>(initialCategory);
   const [provider, setProvider] = React.useState(BILL_PROVIDERS[initialCategory][0]?.name ?? "");
@@ -110,9 +116,7 @@ export function PayBillForm({ userId, accounts }: { userId: string; accounts: Ac
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label>
-              {category === "airtime" || category === "data" ? "Phone number" : "Account / meter number"}
-            </Label>
+            <Label>Account / meter number</Label>
             <Input value={accountReference} onChange={(e) => setAccountReference(e.target.value)} />
           </div>
 

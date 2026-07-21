@@ -47,7 +47,7 @@ export async function payBill(input: PayBillInput) {
       trx.set(db.collection(COLLECTIONS.transactions).doc(), {
         userId: input.userId,
         accountId: input.accountId,
-        type: input.category === "airtime" || input.category === "data" ? input.category : "bill_payment",
+        type: "bill_payment",
         direction: "debit",
         amount: input.amount,
         currency: account.currency ?? "USD",
